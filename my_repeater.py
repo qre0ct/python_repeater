@@ -12,7 +12,7 @@ from configobj import ConfigObj
 
 
 ##############################################################################################################################################
-requestSeparator = "***************************************************"
+requestSeparator = "****************************************************************************************************"
 CONFIG_FILE = 'config.cfg'
 moreConfig = None
 
@@ -46,6 +46,7 @@ class RequestLogger(controller.Master):
 		global requestSeparator
 		self.requestSeparator = requestSeparator 
 		self.rawRequestObject = {}
+		self.targetDomain = []
 
 		debugMessage = "\nRequestLogger Class --> finished init()"
 		debug(debugMessage)
@@ -100,9 +101,9 @@ class RequestLogger(controller.Master):
 		debugMessage = debugMessage + "\nurl is \n" + str(req.url)
 		debug(debugMessage)
 		
-		targetDomain = moreConfig['target']['domain']
+		self.targetDomain = moreConfig['target'].values()
 
-		if (req.headers["host"][0] == targetDomain):
+		if (req.headers["host"][0] in self.targetDomain):
 			self.requestNumber = self.requestNumber + 1
 			
 			debugMessage = "\nPrinting the request in a more refined fashion and in an output file" + str(assembledRequest)
@@ -124,7 +125,7 @@ class RequestLogger(controller.Master):
 					self.myFile.write (self.requestSeparator)
 				self.myFile.write ("\nRequest # " + str(self.requestNumber) + "\n" + "Port: " + str(req.port) + "\n" + assembledRequest )
 				if (req.method != "GET"):
-					self.myFile.write ("\r\n")
+					self.myFile.write ("\r\n\r\n")
 				self.myFile.write (self.requestSeparator + "\n")
 
 			except IOError:
