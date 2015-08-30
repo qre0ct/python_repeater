@@ -7,11 +7,22 @@ from libmproxy.proxy.server import ProxyServer
 from libmproxy.protocol.http import decoded
 import time
 import pickle
+from configobj import ConfigObj
 ##############################################################################################################################################
 
 
 ##############################################################################################################################################
 requestSeparator = "***************************************************"
+CONFIG_FILE = 'config.cfg'
+moreConfig = None
+
+# ----------------------------------------------------------------------------------------------------------------------------------------
+def debug(message):
+	if moreConfig['display']['debug'] == 'true':
+		print message
+# ----------------------------------------------------------------------------------------------------------------------------------------
+
+
 ##############################################################################################################################################
 
 
@@ -21,7 +32,10 @@ class RequestLogger(controller.Master):
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 	def __init__(self, server):
 		controller.Master.__init__(self, server)
-		print "\n Inside init method"
+		
+		debugMessage = "\n RequestLogger Class --> init()"
+		debug(debugMessage)
+
 		self.myFile = None
 		self.requestNumber = 0
 		self.timeStamp = time.strftime("%d%m%Y_%H%M%S")
@@ -32,69 +46,80 @@ class RequestLogger(controller.Master):
 		global requestSeparator
 		self.requestSeparator = requestSeparator 
 		self.rawRequestObject = {}
+
+		debugMessage = "\nRequestLogger Class --> finished init()"
+		debug(debugMessage)
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 
 
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 	def run(self):
-		print "\ninside the run method"
+		debugMessage = "\nRequestLogger Class --> run()"
+		debug(debugMessage)
+
 		try:
+			debugMessage = "\nRequestLogger Class --> run() --> try {}"
+			debug(debugMessage)
+			
 			return controller.Master.run(self)
+		
 		except KeyboardInterrupt:
+			debugMessage = "\nRequestLogger Class --> run() --> except{} KeyboardInterrupt !"
+			debug(debugMessage)
+
 			if not self.myFile.closed :
 				self.myFile.close()
-				print "\nOpen file now closed"
+				
+				if (self.myFile.closed):
+					debugMessage = "\nOpen file now closed"
+					debug(debugMessage)
+
 			self.shutdown()
+
+		debugMessage = "\nRequestLogger Class --> finished run()"
+		debug(debugMessage)
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 
 	
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 	def handle_request(self, flow):
-		print "\n insdide handle_request method"
+		debugMessage = "\nRequestLogger Class --> handle_request()"
+		debug(debugMessage)
+
 		req = flow.request
 		assembledRequest = req.assemble()
-		print "\n the assembled request is "
-		print assembledRequest
-		print "\n the host is "
-		print req.headers["host"][0]
-		#print "\n the request body is \n\n\n"
-		#self.lis = dir(req)
-		#print self.lis
-		print "\n\n\n get_path_components"
-		print req.get_path_components
-		print "\n\n\n"
-		print req.get_path_components()
-		print "\n\n\n get_query"
-		print req.get_query
-		print "\n\n\n"
-		print req.get_query()
-		print "\n\n\n get_decoded_content \n"
-		print req.get_decoded_content
-		print "\n\n\n"
-		print req.get_decoded_content()
-		print "\n\n\nThe request headers are \n"
-		print req.headers
-		print "\n\n\npath is \n"
-		print req.path
-		#print "\n\n\npretty_host is \n"
-		#print req.pretty_host()
-		print "\n\n\nscheme is \n"
-		print req.scheme
-		print "\n\n\nurl is \n"
-		print req.url
-		
 
-		if (req.headers["host"][0] == "api.swiggy.in"):
+		debugMessage = "\nthe assembled request is \n" + str(assembledRequest)
+		debugMessage = debugMessage + "\nthe host is \n" + str(req.headers["host"][0])
+		debugMessage = debugMessage + "\nget_path_components \n" + str(req.get_path_components())
+		debugMessage = debugMessage + "\nget_query \n" + str(req.get_query())
+		debugMessage = debugMessage + "\nget_decoded_content is \n" + str(req.get_decoded_content())
+		debugMessage = debugMessage + "\nThe request headers are \n" + str(req.headers)
+		debugMessage = debugMessage + "\npath is \n" + str(req.path)
+		debugMessage = debugMessage + "\nscheme is \n" + str(req.scheme)
+		debugMessage = debugMessage + "\nurl is \n" + str(req.url)
+		debug(debugMessage)
+		
+		targetDomain = moreConfig['target']['domain']
+
+		if (req.headers["host"][0] == targetDomain):
 			self.requestNumber = self.requestNumber + 1
-			print "\nPrinting the request in a more refined fashion and in an output file"
-			print assembledRequest
-			print "\n Logging the request..."
+			
+			debugMessage = "\nPrinting the request in a more refined fashion and in an output file" + str(assembledRequest)
+			debug(debugMessage)
+			debugMessage = "\nLogging the request..."
+			debug(debugMessage)
+			
 			# the whole file r/w operation can be put in a common class and accessed form there for better modularity of the code
 			# left for a later version
+			
 			self.serializeRequestComponents(req)
 			try:
 				self.myFile = open(self.currentFile, "a")
-				print "\nRequests File opened !"
+				
+				debugMessage = "\nRequestLogger Class --> handle_request --> try {} --> Requests File opened !"
+				debug(debugMessage)
+
 				if (self.requestNumber == 1):
 					self.myFile.write (self.requestSeparator)
 				self.myFile.write ("\nRequest # " + str(self.requestNumber) + "\n" + "Port: " + str(req.port) + "\n" + assembledRequest )
@@ -103,20 +128,38 @@ class RequestLogger(controller.Master):
 				self.myFile.write (self.requestSeparator + "\n")
 
 			except IOError:
+				debugMessage = "\nRequestLogger Class --> handle_request --> except {}"
+				debug(debugMessage)
+				
 				print "\n\nThere was an error r/w -ing the file !! \n\n"
+			
 			finally:
+				debugMessage = "\nRequestLogger Class --> handle_request --> finally {}"
+				debug(debugMessage)
+				
 				self.myFile.close()
-		
+
+				if (self.myFile.closed):
+					debugMessage = "\nRequestLogger Class --> handle_request --> finally {} --> file closed successfully"
+					debug(debugMessage)
+				
 		flow.reply()
+
+		debugMessage = "\nRequestLogger Class --> finished handle_request()"
+		debug(debugMessage)
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 
 	
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 	def serializeRequestComponents(self, serializeThisRequest):
-		print "\n\nSerializing Request Now ..."
+		debugMessage = "\nRequestLogger Class --> serializeRequestComponents() --> Serializing the Raw Request now using Pickle..."
+		debug(debugMessage)
+
 		try :
 			self.myRawFile = open(self.currentRawFile, "ab")
-			print "\nRaw File opened !"
+			
+			debugMessage = "\n\nRequestLogger Class --> serializeRequestComponents() --> try {} --> Raw File opened !"
+			debug(debugMessage)
 
 			requestPort = "port # " + str(self.requestNumber)
 			requestScheme = "scheme # " + str(self.requestNumber)
@@ -137,13 +180,28 @@ class RequestLogger(controller.Master):
 				})
 
 			pickle.dump (self.rawRequestObject, self.myRawFile)
-			print "\n\nCurrent data dumped to raw file"
+			
+			debugMessage = "\nCurrent request picklized .... pickle dumped to raw file"
+			debug(debugMessage)
 		
 		except IOError:
+			debugMessage = "\n\nRequestLogger Class --> serializeRequestComponents() --> except {}"
+			debug(debugMessage)
+
 			print "\n\nThere was an error r/w -ing the file !! \n\n"
+		
 		finally:
+			debugMessage = "\n\nRequestLogger Class --> serializeRequestComponents() --> finally {}"
+			debug(debugMessage)
+
 			self.myRawFile.close()
 
+			if (self.myRawFile.closed):
+				debugMessage = "\n\nRequestLogger Class --> serializeRequestComponents() --> finally {} --> raw pickle file closed successfully"
+				debug(debugMessage)
+
+		debugMessage = "\nRequestLogger Class --> finished serializeRequestComponents()"
+		debug(debugMessage)		
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 ##############################################################################################################################################
 
@@ -154,7 +212,9 @@ class RepeaterModule(RequestLogger):
 
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 	def __init__(self, requestLoggerObject):
-		print "\nRepeater module kickoff "
+		debugMessage = "\nRepeaterModule class --> init() --> Repeater module kickoff !!"
+		debug(debugMessage)
+
 		self.numberOfRequestsCaptured = requestLoggerObject.requestNumber
 
 		if (self.numberOfRequestsCaptured == 0):
@@ -170,30 +230,44 @@ class RepeaterModule(RequestLogger):
 		}
 		print "\nYou have " + str(self.numberOfRequestsCaptured) + " number of requests captured in this session as per your filter \n"
 		print "You can find them in the file " + self.currentFileToProcess + " in your current working directory."
+
+		debugMessage = "\nRepeaterModule class --> finished init()"
+		debug(debugMessage)
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 
 	
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 	def showOptions(self):
+		debugMessage = "\nRepeaterModule class --> showOptions()"
+		debug(debugMessage)
+
 		# taking user input for choosing which app to test !
 		print "\n\n1.View All Requests \n2.Choose one to repeat "
 		# choosing the right method depending on user choice 
 		choice = input("\nEnter the corresponding number : ")
-		print "\n\n"
+		print "\n"
 		if(choice > 2 or choice < 1):
 			print "\nInvalid choice !\n\n"
 			exit(1)
 		if(choice <=2 and choice >=1):
 			self.options[choice]()
+
+		debugMessage = "\nRepeaterModule class --> finished showOptions()"
+		debug(debugMessage)
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 
 	
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 	def viewAllRequests(self):
+		debugMessage = "\nRepeaterModule class --> viewAllRequests()"
+		debug(debugMessage)
+
 		print "\nShowing all requests captured in your current session\n\n"
 		try:
 			myFile = open(self.currentFileToProcess, "r")
-			print "\nFile opened !"
+			
+			debugMessage = "\nRepeaterModule class --> viewAllRequests() --> try {} --> Human readable Requests file opened !"
+			debug(debugMessage)
 
 			for line in myFile.readlines():
 				print line
@@ -203,44 +277,72 @@ class RepeaterModule(RequestLogger):
 			self.chooseRequest()
 
 		except IOError:
+			debugMessage = "\nRepeaterModule class --> viewAllRequests() --> except {}"
+			debug(debugMessage)
+
 			print "\n\nThere was an error r/w -ing the file !! \n\n"
+		
 		finally:
+			debugMessage = "\nRepeaterModule class --> viewAllRequests() --> finally {}"
+			debug(debugMessage)
+
 			myFile.close()
+			
 			if (myFile.closed):
-				print "\nFile is now closed !"
+				debugMessage = "\nOpened Raw file successfully closed !"
+				debug(debugMessage)	
+
+		debugMessage = "\nRepeaterModule class --> finished viewAllRequests()"
+		debug(debugMessage)
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 
 	
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 	def chooseRequest(self):
+		debugMessage = "\nRepeaterModule class --> chooseRequest()"
+		debug(debugMessage)
+
 		print "\nWhich request number to replay ? "
 		print "\nvalid options are 1 to " + str(self.numberOfRequestsCaptured)
 		choice = input("\nEnter the corresponding number : ")
-		print "\n\n"
+		print "\n"
+
 		if(choice > self.numberOfRequestsCaptured or choice < 1):
 			print "\nInvalid choice !\n\n"
 			exit(1)
+		
 		if(choice <= self.numberOfRequestsCaptured and choice >=1):
 			self.requestMaker(choice)
+
+		debugMessage = "\nRepeaterModule class --> finished chooseRequest()"
+		debug(debugMessage)
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 
 	
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 	def requestMaker(self, requestNumber):
-		print "\n Preparing the request object in requestMaker !"
+		debugMessage = "\nRepeaterModule class --> requestMaker() --> Preparing the request object in requestMaker !"
+		debug(debugMessage)
+		
 		totalNoOfParams = 0
 		reqCompoContainer = {}
 		userEditContainer = {}
-		myDic = {}
+		headersDic = {}
+
 		try:
 			myFile = open(self.rawRequestFile, "rb")
-			print "\nFile opened !"
+			
+			debugMessage = "\nRepeaterModule class --> requestMaker() --> try {} --> Raw request file opened to load the pickelized requests"
+			debug(debugMessage)
+
 			while 1:
 				try:
 					reqCompoContainer.update(pickle.load(myFile))
 				except EOFError:
 					break # no more data in the file
-			print reqCompoContainer
+			
+			debugMessage = "\nreqCompoContainer is " + str(reqCompoContainer)
+			debug(debugMessage)
 
 			portKey = "port # " + str(requestNumber)
 			schemeKey = "scheme # " + str(requestNumber)
@@ -250,7 +352,7 @@ class RepeaterModule(RequestLogger):
 			query_paramsKey = "query_params # " + str(requestNumber)
 			request_bodyKey = "request_body # " + str(requestNumber)
 
-			myDic = reqCompoContainer.get(headersKey)
+			headersDic = reqCompoContainer.get(headersKey)
 						
 			# dictionary containing data of request chosen by user
 			userEditContainer.update({
@@ -258,7 +360,7 @@ class RepeaterModule(RequestLogger):
 				'requestScheme' : reqCompoContainer.get(schemeKey),
 				'requestMethod' : reqCompoContainer.get(methodKey),
 				'requestPath' : reqCompoContainer.get(pathKey),
-				'requestHeaders' : myDic,
+				'requestHeaders' : headersDic,
 				'requestQueryParams' : reqCompoContainer.get(query_paramsKey),
 				'requestBody' : reqCompoContainer.get(request_bodyKey)
 				})
@@ -277,43 +379,62 @@ class RepeaterModule(RequestLogger):
 			
 			if (choice.lower() == 'y' ):
 				self.tamperData(userEditContainer)
+			
 			else: 
 				if (choice.lower() == 'n'):
 					print "\n\nCalling the request send function ....just repeating the selected request without any tampering"
 					self.sendRequest()
+				
 				else:
 					print "\nInvalid choice !\n\n"
 					exit(1)
 
-
 			if not myFile.closed:
 				myFile.close()
 
-			print "\n Want to replay another request ?"
+			print "\nWant to replay another request ?"
 			choice = raw_input("\nEnter Y/N (any other character leads to termination of the script): ")
+			
 			if (choice.lower() == 'y' ):
 				self.chooseRequest()
+			
 			else:
 				if(choice.lower() == 'n' ): 
 					print "\nThanks for using the script... more functionality enroute !"
 					exit(1)
+				
 				else:
 					print "\nInvalid choice !\n\n"
 					exit(1)
 
 		except IOError:
+			debugMessage = "\nRepeaterModule class --> requestMaker() --> except {} !"
+			debug(debugMessage)
+			
 			print "\n\nThere was an error r/w -ing the file !! \n\n"
+		
 		finally:
+			debugMessage = "\nRepeaterModule class --> requestMaker() --> finally {} !"
+			debug(debugMessage)
+			
 			myFile.close()
+			
 			if (myFile.closed):
-				print "\nFile is now closed !"
+				debugMessage = "\nRepeaterModule class --> requestMaker() --> finally {} --> open file succesfully closed!"
+				debug(debugMessage)
+
+		debugMessage = "\nRepeaterModule class --> finished requestMaker()"
+		debug(debugMessage)
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 
 	
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 	def tamperData(self, dataToTamperContainer):
-		print "\n\nTampering data now !"
-		print dataToTamperContainer
+		debugMessage = "\nRepeaterModule class --> tamperData()"
+		debug(debugMessage)
+		debugMessage = "Tampering data now !" + str(dataToTamperContainer)
+		debug(debugMessage)
+
 		componentSize = 0
 		genericCounter = 0
 		newKey = ""
@@ -325,10 +446,12 @@ class RepeaterModule(RequestLogger):
 			
 			# handling path component
 			if (choice == 4):
-				print "\n\nPath component"
+				debugMessage = "\nPath component"
+				debug(debugMessage)
+
 				componentSize = len(dataToTamperContainer.get('requestPath'))
 				
-				print "\n\nParameters of this component are \n"
+				print "\nParameters of this component are \n"
 				while (genericCounter < componentSize):
 					print str(genericCounter+1) + "." + str(dataToTamperContainer.get('requestPath')[genericCounter])
 					genericCounter = genericCounter + 1 
@@ -338,17 +461,19 @@ class RepeaterModule(RequestLogger):
 				
 				if (choice.lower() == 'y' ):
 					while 1:
-						print "\nEnter position to insert (Valid is 1 - " + str(componentSize) + ")"
-						choice = input()
+						debugMessage = "\nEnter position to insert (Valid is 1 - " + str(componentSize) + "): "
+						choice = input(debugMessage)
 						
 						if(choice >=1 and choice <= componentSize):
 							print "\nEnter the parameter you want to add \n"
 							newValue = raw_input()
 							dataToTamperContainer.get('requestPath').insert(choice - 1, newValue)
 							print "\nRequest updated"
+						
 						else:
 							print "\n\nInvalid choice !"
 							exit(1)
+						
 						componentSize = len(dataToTamperContainer.get('requestPath'))
 						print "\n\nAdd more (y/n)"
 						addMore = raw_input()
@@ -360,15 +485,18 @@ class RepeaterModule(RequestLogger):
 							else:
 								print "\n\nInvalid choice !"
 								exit(1)
+				
 				else:
 					if(choice.lower() == 'n'):
 						print "\nEnter parameter number to tamper (Valid is 1 - " + str(componentSize) + ")"
 						choice = input()
+						
 						if(choice >=1 and choice <= componentSize):
 							print "\n\nEnter the new value"
 							newValue = raw_input()
 							dataToTamperContainer.get('requestPath')[choice] = newValue
 							print "\nRequest updated"
+						
 						else:
 							print "\n\nInvalid choice !"
 							exit(1)
@@ -384,28 +512,18 @@ class RepeaterModule(RequestLogger):
 
 			# handling headers
 			if(choice == 5):
-				print "\n\nHeader component"
+				debugMessage = "\nHeader component"
+				debug(debugMessage)
+
 				genericCounter = 0
 				componentSize = len(dataToTamperContainer.get('requestHeaders'))
-				print "\n\nParameters of this component are \n"
+				print "\nParameters of this component are \n"
 				while (genericCounter < componentSize):
-					#print "\n\nInside while"
 					print str(genericCounter+1) + "." + str(dataToTamperContainer.get('requestHeaders').keys()[genericCounter]) + ": " + str(dataToTamperContainer.get('requestHeaders')[dataToTamperContainer.get('requestHeaders').keys()[genericCounter]]) 
 					genericCounter = genericCounter + 1 
 
-				'''for headerName, headerValue in dataToTamperContainer['requestHeaders']:
-					print str(genericCounter+1) + ". " + headerName + ": " + headerValue
-					genericCounter = genericCounter + 1'''
-
 				print "\n\nAdd additional headers here ?\nY - Yes, add !\nN - No, tamper existing"
 				choice = raw_input("\nEnter Y/N (any other character leads to termination of the script): ")
-				
-				'''print "\nblalalalallaklajskdjsldkjsldksldkslkd" 
-				print dataToTamperContainer.get('requestHeaders')
-				print type(dataToTamperContainer.get('requestHeaders'))
-				print dataToTamperContainer.get('requestHeaders').keys()
-				print dataToTamperContainer.get('requestHeaders').keys()
-				print dataToTamperContainer.get('requestHeaders').keys()'''
 
 				if (choice.lower() == 'y' ):
 					while 1:
@@ -436,16 +554,16 @@ class RepeaterModule(RequestLogger):
 						choice = input()
 						
 						if(choice >=1 and choice <= componentSize):
-							print "\nNew Key :"
-							newKey = raw_input()
-							print "\nNew Value :"
-							newValue = raw_input()
-							print "\n\nthe selected key is "
-							print dataToTamperContainer.get('requestHeaders').keys()[choice - 1]
+							newKey = raw_input("\nKey : ")
+							newValue = raw_input("\nValue :")
+							
+							debugMessage = "\n\nthe selected key is " + str(dataToTamperContainer.get('requestHeaders').keys()[choice - 1])
+							debug(debugMessage)
+							
 							del dataToTamperContainer.get('requestHeaders')[dataToTamperContainer.get('requestHeaders').keys()[choice - 1]]
 							dataToTamperContainer.get('requestHeaders')[newKey] = [newValue]
 							componentSize = len(dataToTamperContainer.get('requestHeaders'))
-							print "\n\nRequest updated"
+							print "\nRequest updated"
 						
 						else:
 							print "\n\nInvalid choice !"
@@ -466,6 +584,9 @@ class RepeaterModule(RequestLogger):
 			exit(1)
 
 		self.sendRequest()
+
+		debugMessage = "\nRepeaterModule class --> finished tamperData()"
+		debug(debugMessage)
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 
 	
@@ -485,6 +606,7 @@ if __name__ == "__main__":
 		# use ~/.mitmproxy/mitmproxy-ca.pem as default CA file.
 		cadir="~/.mitmproxy/"
 	)
+	moreConfig = ConfigObj(CONFIG_FILE)
 	state = flow.State()
 	server = ProxyServer(config)
 	reqLog = RequestLogger(server)
