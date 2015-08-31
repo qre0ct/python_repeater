@@ -12,7 +12,7 @@ from configobj import ConfigObj
 
 
 ##############################################################################################################################################
-requestSeparator = "****************************************************************************************************"
+requestSeparator = "*********************************************************************************************************************************"
 CONFIG_FILE = 'config.cfg'
 moreConfig = None
 
@@ -378,8 +378,7 @@ class RepeaterModule(RequestLogger):
 			print "\n5. Headers :" + debugMessage
 			debugMessage = " ".join(str(e) for e in reqCompoContainer.get(query_paramsKey))
 			print "\n6. Query Parameters :" + debugMessage
-			debugMessage = " ".join(str(e) for e in reqCompoContainer.get(request_bodyKey))
-			print "\n7. Request Body :" + debugMessage
+			print "\n7. Request Body :" + str(reqCompoContainer.get(request_bodyKey))
 
 			print "\n\nTamper components ? (Y/N)\nY - Yes, tamper it !\nN - No, Just repeat the selected request"
 			choice = raw_input("\nEnter Y/N (any other character leads to termination of the script): ")
@@ -468,20 +467,31 @@ class RepeaterModule(RequestLogger):
 					choice = raw_input("\nEnter Y/N (any other character leads to termination of the script): ")
 					
 					if (choice.lower() == 'y' ):
-						debugMessage = "\nEnter position to insert (Valid is 1 - " + str(componentSize) + "): "
-						choice = input(debugMessage)
-						
-						if(choice >=1 and choice <= componentSize):
+						if (componentSize != 0):
+							debugMessage = "\nEnter position to insert (Valid is 1 - " + str(componentSize) + "): "
+							choice = input(debugMessage)
+							
+							if(choice >=1 and choice <= componentSize):
+								newValue = raw_input("\nEnter the parameter you want to add: ")
+								dataToTamperContainer.get('requestPath').insert(choice - 1, newValue)
+								print "\nRequest updated"
+							
+							else:
+								print "\n\nInvalid choice !"
+								exit(1)
+
+						else :
+							debugMessage = "\nSelection empty ! You can insert only at position 1 "
 							newValue = raw_input("\nEnter the parameter you want to add: ")
-							dataToTamperContainer.get('requestPath').insert(choice - 1, newValue)
+							dataToTamperContainer.get('requestPath').insert(0, newValue)
 							print "\nRequest updated"
-						
-						else:
-							print "\n\nInvalid choice !"
-							exit(1)
-					
+
 					else:
 						if(choice.lower() == 'n'):
+							if (componentSize == 0):
+								print "\nNothing to edit as of now. The selcetion is empty. You may want to add something before you can edit !"
+								continue
+
 							debugMessage = "\nEnter parameter number to tamper (Valid is 1 - " + str(componentSize) + "): "
 							choice = input(debugMessage)
 							
@@ -521,6 +531,10 @@ class RepeaterModule(RequestLogger):
 
 					else:
 						if(choice.lower() == 'n'):
+							if (componentSize == 0):
+								print "\nNothing to edit as of now. The selcetion is empty. You may want to add something before you can edit !"
+								continue
+
 							debugMessage = "\nEnter parameter number to tamper (Valid is 1 - " + str(componentSize) + "): "
 							choice = input(debugMessage)
 							
@@ -567,6 +581,10 @@ class RepeaterModule(RequestLogger):
 
 					else:
 						if(choice.lower() == 'n'):
+							if (componentSize == 0):
+								print "\nNothing to edit as of now. The selcetion is empty. You may want to add something before you can edit !"
+								continue
+
 							debugMessage = "\nEnter parameter number to tamper (Valid is 1 - " + str(componentSize) + "): "
 							choice = input(debugMessage)
 							
@@ -589,6 +607,52 @@ class RepeaterModule(RequestLogger):
 							print "\n\nInvalid choice !"
 							exit(1)
 				# end of if(choice == 6)
+
+				# handling body parameters
+				if(choice == 7):
+					debugMessage = "\nBody parameters component"
+					debug(debugMessage)
+
+					genericCounter = 0
+					componentSize = len(dataToTamperContainer.get('requestBody'))
+					print "\nThe request body as one whole entity is \n"
+					
+					debugMessage = "\nThe body part of the request is always treated as a string by mitmproxy. Hence needs to be handled accordingly" 
+					debugMessage = debugMessage + str(type(dataToTamperContainer.get('requestBody')))
+					debug(debugMessage)
+
+					print str(dataToTamperContainer.get('requestBody'))
+
+					print "\n\nAdd additional body parameters here ?\nY - Yes, add !\nN - No, tamper existing"
+					choice = raw_input("\nEnter Y/N (any other character leads to termination of the script): ")
+
+					if (choice.lower() == 'y' ):
+						newValue = raw_input("\nValue :")
+						
+						if (componentSize == 0):
+							debugMessage = str(newValue)
+						
+						else:
+							debugMessage = str(dataToTamperContainer.get('requestBody')) + str(newValue)
+						
+						dataToTamperContainer.update({'requestBody': debugMessage})
+						print "\n\nRequest updated"
+
+					else:
+						if(choice.lower() == 'n'):
+							if (componentSize == 0):
+								print "\nNothing to edit as of now. The selcetion is empty. You may want to add something before you can edit !"
+								continue
+
+							debugMessage = "\nNo separate parameters in the body. You need to edit the entire body itself. You may copy paste ! "
+							choice = raw_input(debugMessage)
+							dataToTamperContainer.update({'requestBody': choice})
+							print "\n\nRequest updated"						
+						
+						else:
+							print "\n\nInvalid choice !"
+							exit(1)
+				# end of if(choice == 7)
 
 			# end of if (choice >= 1 and choice <= 7):
 			else:
