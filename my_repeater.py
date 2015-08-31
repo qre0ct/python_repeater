@@ -388,8 +388,11 @@ class RepeaterModule(RequestLogger):
 			
 			else: 
 				if (choice.lower() == 'n'):
-					print "\n\nCalling the request send function ....just repeating the selected request without any tampering"
-					self.sendRequest()
+					debugMessage = "\nCalling the request send function ...."
+					debug(debugMessage)
+
+					print "\njust repeating the selected request without any tampering"
+					self.sendRequest(userEditContainer)
 				
 				else:
 					print "\nInvalid choice !\n\n"
@@ -510,7 +513,7 @@ class RepeaterModule(RequestLogger):
 					# end of if(choice == 4)
 
 					# handling headers
-					if(choice == 5):
+					elif(choice == 5):
 						debugMessage = "\nHeader component"
 						debug(debugMessage)
 
@@ -560,7 +563,7 @@ class RepeaterModule(RequestLogger):
 					# end of if(choice == 5)
 
 					# handling query parameters
-					if(choice == 6):
+					elif(choice == 6):
 						debugMessage = "\nQuery parameters component"
 						debug(debugMessage)
 
@@ -610,7 +613,7 @@ class RepeaterModule(RequestLogger):
 					# end of if(choice == 6)
 
 					# handling body parameters
-					if(choice == 7):
+					elif(choice == 7):
 						debugMessage = "\nBody parameters component"
 						debug(debugMessage)
 
@@ -656,7 +659,7 @@ class RepeaterModule(RequestLogger):
 					# end of if(choice == 7)
 
 					# handling port edit
-					if(choice == 1):
+					elif(choice == 1):
 						debugMessage = "\nRequest port component"
 						debug(debugMessage)
 						
@@ -667,7 +670,7 @@ class RepeaterModule(RequestLogger):
 					# end of if(choice == 1)
 
 					# handling scheme edit
-					if(choice == 2):
+					elif(choice == 2):
 						debugMessage = "\nRequest scheme component"
 						debug(debugMessage)
 
@@ -678,7 +681,7 @@ class RepeaterModule(RequestLogger):
 					# end of if(choice == 2)
 
 					# handling method edit
-					if(choice == 3):
+					elif(choice == 3):
 						debugMessage = "\nRequest method component"
 						debug(debugMessage)
 
@@ -713,7 +716,7 @@ class RepeaterModule(RequestLogger):
 			print "\nPositive integer to be entered where and when required !! "
 			exit(1)
 
-		self.sendRequest()
+		self.sendRequest(dataToTamperContainer)
 
 		debugMessage = "\nRepeaterModule class --> finished tamperData()"
 		debug(debugMessage)
@@ -721,8 +724,14 @@ class RepeaterModule(RequestLogger):
 
 	
 	# ----------------------------------------------------------------------------------------------------------------------------------------
-	def sendRequest(self):
+	def sendRequest(self, sendThisRequest):
+		debugMessage = "\nRepeaterModule class --> sendRequest()"
+		debug(debugMessage)
+
+		print "\nFinal request being sent now is :\n"
+		print sendThisRequest
 		print "\n\nSending the request now ...! "
+		
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 ##############################################################################################################################################
 
