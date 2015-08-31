@@ -314,7 +314,7 @@ class RepeaterModule(RequestLogger):
 		
 		if(choice <= self.numberOfRequestsCaptured and choice >=1):
 			self.requestMaker(choice)
-
+		
 		debugMessage = "\nRepeaterModule class --> finished chooseRequest()"
 		debug(debugMessage)
 	# ----------------------------------------------------------------------------------------------------------------------------------------
@@ -441,237 +441,278 @@ class RepeaterModule(RequestLogger):
 		debugMessage = "Tampering data now !" + str(dataToTamperContainer)
 		debug(debugMessage)
 
-		while 1:
-			componentSize = 0
-			genericCounter = 0
-			newKey = ""
-			newValue = ""
+		try :
+			while 1:
+				componentSize = 0
+				genericCounter = 0
+				newKey = ""
+				newValue = ""
 
-			choice = input("\nEnter the component number to tamper (1-7) ")
-			
-			if (choice >= 1 and choice <= 7):
+				choice = input("\nEnter the component number to tamper (1-7) ")
 				
-				# handling path component
-				if (choice == 4):
-					debugMessage = "\nPath component"
-					debug(debugMessage)
+				if (choice >= 1 and choice <= 7):
+					
+					# handling path component
+					if (choice == 4):
+						debugMessage = "\nPath component"
+						debug(debugMessage)
 
-					componentSize = len(dataToTamperContainer.get('requestPath'))
-					
-					print "\nParameters of this component are \n"
-					while (genericCounter < componentSize):
-						print str(genericCounter+1) + "." + str(dataToTamperContainer.get('requestPath')[genericCounter])
-						genericCounter = genericCounter + 1 
-					
-					print "\n\nAdd additional parameters here ?\nY - Yes, add !\nN - No, tamper existing"
-					choice = raw_input("\nEnter Y/N (any other character leads to termination of the script): ")
-					
-					if (choice.lower() == 'y' ):
-						if (componentSize != 0):
-							debugMessage = "\nEnter position to insert (Valid is 1 - " + str(componentSize) + "): "
-							choice = input(debugMessage)
-							
-							if(choice >=1 and choice <= componentSize):
+						componentSize = len(dataToTamperContainer.get('requestPath'))
+						
+						print "\nParameters of this component are \n"
+						while (genericCounter < componentSize):
+							print str(genericCounter+1) + "." + str(dataToTamperContainer.get('requestPath')[genericCounter])
+							genericCounter = genericCounter + 1 
+						
+						print "\n\nAdd additional parameters here ?\nY - Yes, add !\nN - No, tamper existing"
+						choice = raw_input("\nEnter Y/N (any other character leads to termination of the script): ")
+						
+						if (choice.lower() == 'y' ):
+							if (componentSize != 0):
+								debugMessage = "\nEnter position to insert (Valid is 1 - " + str(componentSize) + "): "
+								choice = input(debugMessage)
+								
+								if(choice >=1 and choice <= componentSize):
+									newValue = raw_input("\nEnter the parameter you want to add: ")
+									dataToTamperContainer.get('requestPath').insert(choice - 1, newValue)
+									print "\nRequest updated"
+								
+								else:
+									print "\n\nInvalid choice !"
+									exit(1)
+
+							else :
+								debugMessage = "\nSelection empty ! You can insert only at position 1 "
 								newValue = raw_input("\nEnter the parameter you want to add: ")
-								dataToTamperContainer.get('requestPath').insert(choice - 1, newValue)
+								dataToTamperContainer.get('requestPath').insert(0, newValue)
 								print "\nRequest updated"
+
+						else:
+							if(choice.lower() == 'n'):
+								if (componentSize == 0):
+									print "\nNothing to edit as of now. The selcetion is empty. You may want to add something before you can edit !"
+									continue
+
+								debugMessage = "\nEnter parameter number to tamper (Valid is 1 - " + str(componentSize) + "): "
+								choice = input(debugMessage)
+								
+								if(choice >=1 and choice <= componentSize):
+									newValue = raw_input("\nEnter the new value: ")
+									dataToTamperContainer.get('requestPath')[choice - 1] = newValue
+									print "\nRequest updated"
+								
+								else:
+									print "\n\nInvalid choice !"
+									exit(1)
+							else:
+								print "\n\nInvalid choice !"
+								exit(1)
+					# end of if(choice == 4)
+
+					# handling headers
+					if(choice == 5):
+						debugMessage = "\nHeader component"
+						debug(debugMessage)
+
+						genericCounter = 0
+						componentSize = len(dataToTamperContainer.get('requestHeaders'))
+						print "\nParameters of this component are \n"
+						while (genericCounter < componentSize):
+							print str(genericCounter+1) + "." + str(dataToTamperContainer.get('requestHeaders').keys()[genericCounter]) + ": " + str(dataToTamperContainer.get('requestHeaders')[dataToTamperContainer.get('requestHeaders').keys()[genericCounter]]) 
+							genericCounter = genericCounter + 1 
+
+						print "\n\nAdd additional headers here ?\nY - Yes, add !\nN - No, tamper existing"
+						choice = raw_input("\nEnter Y/N (any other character leads to termination of the script): ")
+
+						if (choice.lower() == 'y' ):
+							newKey = raw_input("\nKey : ")
+							newValue = raw_input("\nValue :")
+							dataToTamperContainer.get('requestHeaders')[newKey] = [newValue]
+							print "\n\nRequest updated"
+
+						else:
+							if(choice.lower() == 'n'):
+								if (componentSize == 0):
+									print "\nNothing to edit as of now. The selcetion is empty. You may want to add something before you can edit !"
+									continue
+
+								debugMessage = "\nEnter parameter number to tamper (Valid is 1 - " + str(componentSize) + "): "
+								choice = input(debugMessage)
+								
+								if(choice >=1 and choice <= componentSize):
+									newKey = raw_input("\nKey : ")
+									newValue = raw_input("\nValue :")
+									
+									debugMessage = "\n\nthe selected key is " + str(dataToTamperContainer.get('requestHeaders').keys()[choice - 1])
+									debug(debugMessage)
+									
+									del dataToTamperContainer.get('requestHeaders')[dataToTamperContainer.get('requestHeaders').keys()[choice - 1]]
+									dataToTamperContainer.get('requestHeaders')[newKey] = [newValue]
+									print "\nRequest updated"
+								
+								else:
+									print "\n\nInvalid choice !"
+									exit(1)	
 							
 							else:
 								print "\n\nInvalid choice !"
 								exit(1)
+					# end of if(choice == 5)
 
-						else :
-							debugMessage = "\nSelection empty ! You can insert only at position 1 "
-							newValue = raw_input("\nEnter the parameter you want to add: ")
-							dataToTamperContainer.get('requestPath').insert(0, newValue)
-							print "\nRequest updated"
+					# handling query parameters
+					if(choice == 6):
+						debugMessage = "\nQuery parameters component"
+						debug(debugMessage)
 
-					else:
-						if(choice.lower() == 'n'):
-							if (componentSize == 0):
-								print "\nNothing to edit as of now. The selcetion is empty. You may want to add something before you can edit !"
-								continue
+						genericCounter = 0
+						componentSize = len(dataToTamperContainer.get('requestQueryParams'))
+						print "\nParameters of this component are \n"
+						while (genericCounter < componentSize):
+							print str(genericCounter+1) + "." + str(dataToTamperContainer.get('requestQueryParams').keys()[genericCounter]) + "= " + str(dataToTamperContainer.get('requestQueryParams')[dataToTamperContainer.get('requestQueryParams').keys()[genericCounter]]) 
+							genericCounter = genericCounter + 1
 
-							debugMessage = "\nEnter parameter number to tamper (Valid is 1 - " + str(componentSize) + "): "
-							choice = input(debugMessage)
-							
-							if(choice >=1 and choice <= componentSize):
-								newValue = raw_input("\nEnter the new value: ")
-								dataToTamperContainer.get('requestPath')[choice - 1] = newValue
-								print "\nRequest updated"
+						print "\n\nAdd additional query parameters here ?\nY - Yes, add !\nN - No, tamper existing"
+						choice = raw_input("\nEnter Y/N (any other character leads to termination of the script): ")
+
+						if (choice.lower() == 'y' ):
+							newKey = raw_input("\nKey : ")
+							newValue = raw_input("\nValue :")
+							dataToTamperContainer.get('requestQueryParams')[newKey] = [newValue]
+							print "\n\nRequest updated"
+
+						else:
+							if(choice.lower() == 'n'):
+								if (componentSize == 0):
+									print "\nNothing to edit as of now. The selcetion is empty. You may want to add something before you can edit !"
+									continue
+
+								debugMessage = "\nEnter parameter number to tamper (Valid is 1 - " + str(componentSize) + "): "
+								choice = input(debugMessage)
+								
+								if(choice >=1 and choice <= componentSize):
+									newKey = raw_input("\nKey : ")
+									newValue = raw_input("\nValue :")
+									
+									debugMessage = "\n\nthe selected key is " + str(dataToTamperContainer.get('requestQueryParams').keys()[choice - 1])
+									debug(debugMessage)
+									
+									del dataToTamperContainer.get('requestQueryParams')[dataToTamperContainer.get('requestQueryParams').keys()[choice - 1]]
+									dataToTamperContainer.get('requestQueryParams')[newKey] = [newValue]
+									print "\nRequest updated"
+								
+								else:
+									print "\n\nInvalid choice !"
+									exit(1)	
 							
 							else:
 								print "\n\nInvalid choice !"
 								exit(1)
-						else:
-							print "\n\nInvalid choice !"
-							exit(1)
-				# end of if(choice == 4)
+					# end of if(choice == 6)
 
-				# handling headers
-				if(choice == 5):
-					debugMessage = "\nHeader component"
-					debug(debugMessage)
+					# handling body parameters
+					if(choice == 7):
+						debugMessage = "\nBody parameters component"
+						debug(debugMessage)
 
-					genericCounter = 0
-					componentSize = len(dataToTamperContainer.get('requestHeaders'))
-					print "\nParameters of this component are \n"
-					while (genericCounter < componentSize):
-						print str(genericCounter+1) + "." + str(dataToTamperContainer.get('requestHeaders').keys()[genericCounter]) + ": " + str(dataToTamperContainer.get('requestHeaders')[dataToTamperContainer.get('requestHeaders').keys()[genericCounter]]) 
-						genericCounter = genericCounter + 1 
+						genericCounter = 0
+						componentSize = len(dataToTamperContainer.get('requestBody'))
+						print "\nThe request body as one whole entity is \n"
+						
+						debugMessage = "\nThe body part of the request is always treated as a string by mitmproxy. Hence needs to be handled accordingly" 
+						debugMessage = debugMessage + str(type(dataToTamperContainer.get('requestBody')))
+						debug(debugMessage)
 
-					print "\n\nAdd additional headers here ?\nY - Yes, add !\nN - No, tamper existing"
-					choice = raw_input("\nEnter Y/N (any other character leads to termination of the script): ")
+						print str(dataToTamperContainer.get('requestBody'))
 
-					if (choice.lower() == 'y' ):
-						newKey = raw_input("\nKey : ")
-						newValue = raw_input("\nValue :")
-						dataToTamperContainer.get('requestHeaders')[newKey] = [newValue]
-						print "\n\nRequest updated"
+						print "\n\nAdd additional body parameters here ?\nY - Yes, add !\nN - No, tamper existing"
+						choice = raw_input("\nEnter Y/N (any other character leads to termination of the script): ")
 
-					else:
-						if(choice.lower() == 'n'):
-							if (componentSize == 0):
-								print "\nNothing to edit as of now. The selcetion is empty. You may want to add something before you can edit !"
-								continue
-
-							debugMessage = "\nEnter parameter number to tamper (Valid is 1 - " + str(componentSize) + "): "
-							choice = input(debugMessage)
+						if (choice.lower() == 'y' ):
+							newValue = raw_input("\nValue :")
 							
-							if(choice >=1 and choice <= componentSize):
-								newKey = raw_input("\nKey : ")
-								newValue = raw_input("\nValue :")
-								
-								debugMessage = "\n\nthe selected key is " + str(dataToTamperContainer.get('requestHeaders').keys()[choice - 1])
-								debug(debugMessage)
-								
-								del dataToTamperContainer.get('requestHeaders')[dataToTamperContainer.get('requestHeaders').keys()[choice - 1]]
-								dataToTamperContainer.get('requestHeaders')[newKey] = [newValue]
-								print "\nRequest updated"
+							if (componentSize == 0):
+								debugMessage = str(newValue)
+							
+							else:
+								debugMessage = str(dataToTamperContainer.get('requestBody')) + str(newValue)
+							
+							dataToTamperContainer.update({'requestBody': debugMessage})
+							print "\n\nRequest updated"
+
+						else:
+							if(choice.lower() == 'n'):
+								if (componentSize == 0):
+									print "\nNothing to edit as of now. The selcetion is empty. You may want to add something before you can edit !"
+									continue
+
+								debugMessage = "\nNo separate parameters in the body. You need to edit the entire body itself. You may copy paste ! "
+								choice = raw_input(debugMessage)
+								dataToTamperContainer.update({'requestBody': choice})
+								print "\n\nRequest updated"						
 							
 							else:
 								print "\n\nInvalid choice !"
-								exit(1)	
+								exit(1)
+					# end of if(choice == 7)
+
+					# handling port edit
+					if(choice == 1):
+						debugMessage = "\nRequest port component"
+						debug(debugMessage)
 						
-						else:
-							print "\n\nInvalid choice !"
-							exit(1)
-				# end of if(choice == 5)
-
-				# handling query parameters
-				if(choice == 6):
-					debugMessage = "\nQuery parameters component"
-					debug(debugMessage)
-
-					genericCounter = 0
-					componentSize = len(dataToTamperContainer.get('requestQueryParams'))
-					print "\nParameters of this component are \n"
-					while (genericCounter < componentSize):
-						print str(genericCounter+1) + "." + str(dataToTamperContainer.get('requestQueryParams').keys()[genericCounter]) + "= " + str(dataToTamperContainer.get('requestQueryParams')[dataToTamperContainer.get('requestQueryParams').keys()[genericCounter]]) 
-						genericCounter = genericCounter + 1
-
-					print "\n\nAdd additional query parameters here ?\nY - Yes, add !\nN - No, tamper existing"
-					choice = raw_input("\nEnter Y/N (any other character leads to termination of the script): ")
-
-					if (choice.lower() == 'y' ):
-						newKey = raw_input("\nKey : ")
-						newValue = raw_input("\nValue :")
-						dataToTamperContainer.get('requestQueryParams')[newKey] = [newValue]
+						print "\nThe request is currently directed on port number: " + str(dataToTamperContainer.get('requestPort'))
+						newValue = input("\nEnter the new port number you want to send it on: ")
+						dataToTamperContainer.update({'requestPort':newValue})
 						print "\n\nRequest updated"
+					# end of if(choice == 1)
 
-					else:
-						if(choice.lower() == 'n'):
-							if (componentSize == 0):
-								print "\nNothing to edit as of now. The selcetion is empty. You may want to add something before you can edit !"
-								continue
+					# handling scheme edit
+					if(choice == 2):
+						debugMessage = "\nRequest scheme component"
+						debug(debugMessage)
 
-							debugMessage = "\nEnter parameter number to tamper (Valid is 1 - " + str(componentSize) + "): "
-							choice = input(debugMessage)
-							
-							if(choice >=1 and choice <= componentSize):
-								newKey = raw_input("\nKey : ")
-								newValue = raw_input("\nValue :")
-								
-								debugMessage = "\n\nthe selected key is " + str(dataToTamperContainer.get('requestQueryParams').keys()[choice - 1])
-								debug(debugMessage)
-								
-								del dataToTamperContainer.get('requestQueryParams')[dataToTamperContainer.get('requestQueryParams').keys()[choice - 1]]
-								dataToTamperContainer.get('requestQueryParams')[newKey] = [newValue]
-								print "\nRequest updated"
-							
-							else:
-								print "\n\nInvalid choice !"
-								exit(1)	
-						
-						else:
-							print "\n\nInvalid choice !"
-							exit(1)
-				# end of if(choice == 6)
-
-				# handling body parameters
-				if(choice == 7):
-					debugMessage = "\nBody parameters component"
-					debug(debugMessage)
-
-					genericCounter = 0
-					componentSize = len(dataToTamperContainer.get('requestBody'))
-					print "\nThe request body as one whole entity is \n"
-					
-					debugMessage = "\nThe body part of the request is always treated as a string by mitmproxy. Hence needs to be handled accordingly" 
-					debugMessage = debugMessage + str(type(dataToTamperContainer.get('requestBody')))
-					debug(debugMessage)
-
-					print str(dataToTamperContainer.get('requestBody'))
-
-					print "\n\nAdd additional body parameters here ?\nY - Yes, add !\nN - No, tamper existing"
-					choice = raw_input("\nEnter Y/N (any other character leads to termination of the script): ")
-
-					if (choice.lower() == 'y' ):
-						newValue = raw_input("\nValue :")
-						
-						if (componentSize == 0):
-							debugMessage = str(newValue)
-						
-						else:
-							debugMessage = str(dataToTamperContainer.get('requestBody')) + str(newValue)
-						
-						dataToTamperContainer.update({'requestBody': debugMessage})
+						print "\nThe request is currently directed with scheme: " + str(dataToTamperContainer.get('requestScheme'))
+						newValue = raw_input("\nEnter the new scheme you want to send it with: ")
+						dataToTamperContainer.update({'requestScheme':newValue})
 						print "\n\nRequest updated"
+					# end of if(choice == 2)
 
-					else:
-						if(choice.lower() == 'n'):
-							if (componentSize == 0):
-								print "\nNothing to edit as of now. The selcetion is empty. You may want to add something before you can edit !"
-								continue
+					# handling method edit
+					if(choice == 3):
+						debugMessage = "\nRequest method component"
+						debug(debugMessage)
 
-							debugMessage = "\nNo separate parameters in the body. You need to edit the entire body itself. You may copy paste ! "
-							choice = raw_input(debugMessage)
-							dataToTamperContainer.update({'requestBody': choice})
-							print "\n\nRequest updated"						
-						
-						else:
-							print "\n\nInvalid choice !"
-							exit(1)
-				# end of if(choice == 7)
+						print "\nThe request is currently directed with method: " + str(dataToTamperContainer.get('requestMethod'))
+						newValue = raw_input("\nEnter the new method you want to use to send it: ")
+						dataToTamperContainer.update({'requestMethod':newValue})
+						print "\n\nRequest updated"
+					# end of if(choice == 3)
 
-			# end of if (choice >= 1 and choice <= 7):
-			else:
-				print "\n\nInvalid choice !"
-				exit(1)
-
-			addMore = raw_input("\nTamper more (y/n): ")
-			if(addMore.lower() == 'y'):
-				continue
-			
-			else:
-				if(addMore.lower() == 'n'):
-					break
-				
+				# end of if (choice >= 1 and choice <= 7):
 				else:
 					print "\n\nInvalid choice !"
 					exit(1)
 
-		# enf of while 1:
+				addMore = raw_input("\nTamper more (y/n): ")
+				if(addMore.lower() == 'y'):
+					continue
+				
+				else:
+					if(addMore.lower() == 'n'):
+						break
+					
+					else:
+						print "\n\nInvalid choice !"
+						exit(1)
+			# enf of while 1:
+		# end of try {}
+		except ValueError:
+			debugMessage = "\nRepeaterModule class --> tamperData() --> except {} "
+			debug(debugMessage)
+
+			print "\nPositive integer to be entered where and when required !! "
+			exit(1)
+
 		self.sendRequest()
 
 		debugMessage = "\nRepeaterModule class --> finished tamperData()"
