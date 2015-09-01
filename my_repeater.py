@@ -735,6 +735,7 @@ class RepeaterModule(RequestLogger):
 		componentLength = 0
 		contentLengthHeaderKey = "Content-Length"
 		contentLengthHeaderVal = 0
+		bodyPresentFlag = 0
 
 		print "\nFinal request being sent now is :\n"
 		print "\n1. Port :" + str(sendThisRequest.get('requestPort'))
@@ -758,8 +759,7 @@ class RepeaterModule(RequestLogger):
 			url = str(sendThisRequest.get('requestScheme')) + "://" + str(sendThisRequest.get('requestHeaders')['host'][0]) + ":" + str(sendThisRequest.get('requestPort'))
 			url = url + "/" + reqPath
 			
-			debugMessage = "\nREquest being fired on the URL : " + url
-			debug(debugMessage)
+			print "\nRequest being fired on the URL : " + url
 
 			# making the headers
 			componentLength = len(sendThisRequest.get('requestHeaders'))
@@ -785,6 +785,7 @@ class RepeaterModule(RequestLogger):
 			if(componentLength != 0):
 				contentLengthHeaderVal = componentLength
 				headersPayload.update({contentLengthHeaderKey:contentLengthHeaderVal})
+				bodyPresentFlag = 1
 
 			# making the query params
 			genericCounter = 0
@@ -811,7 +812,12 @@ class RepeaterModule(RequestLogger):
 				debugMessage = "\nPayloads dictionary is " + str(queryParamsPayload)
 				debug (debugMessage)
 
-				response = requests.get(url, params = queryParamsPayload, headers = headersPayload)
+				if(bodyPresentFlag):
+					response = requests.request('GET', url, params = queryParamsPayload, headers = headersPayload, data=str(sendThisRequest.get('requestBody')))
+
+				else:
+					response = requests.get(url, params = queryParamsPayload, headers = headersPayload)
+				
 				print "\nThe response received for the above request is : \n\n"
 				print response.status_code
 				for k, v in response.headers.iteritems():
