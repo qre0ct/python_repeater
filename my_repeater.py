@@ -756,7 +756,7 @@ class RepeaterModule(RequestLogger):
 			debug(debugMessage)
 
 			bodyPresentFlag = 0
-			
+
 			# making the url
 			url = str(sendThisRequest.get('requestScheme')) + "://" + str(sendThisRequest.get('requestHeaders')['host'][0]) + ":" + str(sendThisRequest.get('requestPort'))
 			url = url + "/" + reqPath
@@ -819,15 +819,9 @@ class RepeaterModule(RequestLogger):
 
 				else:
 					response = requests.get(url, params = queryParamsPayload, headers = headersPayload)
-				
-				print "\nThe response received for the above request is : \n\n"
-				print response.status_code
-				for k, v in response.headers.iteritems():
-					print k + ": " + v
-				print response.content
 
 			else:
-				debugMessage = "\nNo query params found "
+				debugMessage = "\nNo query params not found "
 				debug(debugMessage)
 
 				if(bodyPresentFlag):
@@ -836,11 +830,11 @@ class RepeaterModule(RequestLogger):
 				else:
 					response = requests.get(url, headers = headersPayload)
 				
-				print "\nThe response received for the above request is : \n\n"
-				print response.status_code
-				for k, v in response.headers.iteritems():
-					print k + ": " + v
-				print response.content
+			print "\nThe response received for the above request is : \n\n"
+			print response.status_code
+			for k, v in response.headers.iteritems():
+				print k + ": " + v
+			print response.content
 
 		
 		debugMessage = "\nRepeaterModule class --> finished sendRequest()"
