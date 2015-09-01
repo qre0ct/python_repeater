@@ -6,6 +6,7 @@ from libmproxy import flow, proxy, controller
 from libmproxy.proxy.server import ProxyServer
 from libmproxy.protocol.http import decoded
 import time
+import requests
 import pickle
 from configobj import ConfigObj
 ##############################################################################################################################################
@@ -401,7 +402,7 @@ class RepeaterModule(RequestLogger):
 			if not myFile.closed:
 				myFile.close()
 
-			print "\nWant to replay another request ?"
+			print "\n\nWant to replay another request ?"
 			choice = raw_input("\nEnter Y/N (any other character leads to termination of the script): ")
 			
 			if (choice.lower() == 'y' ):
@@ -728,10 +729,101 @@ class RepeaterModule(RequestLogger):
 		debugMessage = "\nRepeaterModule class --> sendRequest()"
 		debug(debugMessage)
 
+		queryParamsPayload = {}
+		headersPayload = {}
+		genericCounter = 0
+		componentLength = 0
+		contentLengthHeaderKey = "Content-Length"
+		contentLengthHeaderVal = 0
+
 		print "\nFinal request being sent now is :\n"
-		print sendThisRequest
+		print "\n1. Port :" + str(sendThisRequest.get('requestPort'))
+		print "\n2. Scheme :" + str(sendThisRequest.get('requestScheme'))
+		print "\n3. Method :" + str(sendThisRequest.get('requestMethod'))
+		reqPath = "/".join(str(e) for e in sendThisRequest.get('requestPath'))
+		print "\n4. Path :" + reqPath
+		debugMessage = "".join(str(e) for e in sendThisRequest.get('requestHeaders'))
+		print "\n5. Headers :" + debugMessage
+		qryParams = "".join(str(e) for e in sendThisRequest.get('requestQueryParams'))
+		print "\n6. Query Parameters :" + qryParams
+		print "\n7. Request Body :" + str(sendThisRequest.get('requestBody'))
 		print "\n\nSending the request now ...! "
+
+		# creating the GET request 
+		if(str(sendThisRequest.get('requestMethod')).lower() == "get"):
+			debugMessage = "\npreparing the GET request "
+			debug(debugMessage)
+
+			# making the url
+			url = str(sendThisRequest.get('requestScheme')) + "://" + str(sendThisRequest.get('requestHeaders')['host'][0]) + ":" + str(sendThisRequest.get('requestPort'))
+			url = url + "/" + reqPath
+			
+			debugMessage = "\nREquest being fired on the URL : " + url
+			debug(debugMessage)
+
+			# making the headers
+			componentLength = len(sendThisRequest.get('requestHeaders'))
+			while(genericCounter < componentLength):
+				key = str(sendThisRequest.get('requestHeaders').keys()[genericCounter])
+				val = str(sendThisRequest.get('requestHeaders')[sendThisRequest.get('requestHeaders').keys()[genericCounter]][0])
+				
+				debugMessage = "\nKey = " + key + "\nVal = " + val
+				debug(debugMessage)
+
+				headersPayload.update({key:val})
+				genericCounter = genericCounter + 1
+
+			debugMessage = "\nHeaders dictionary is " + str(headersPayload)
+			debug (debugMessage)
+			
+			# cehcking if content-length header is needed - if the user has editted the body of a GET request, then content length header needs to be included
+			componentLength = len(sendThisRequest.get('requestBody'))
+
+			debugMessage = "\nSize of body in the GET request is " + str(componentLength)
+			debug(debugMessage)
+
+			if(componentLength != 0):
+				contentLengthHeaderVal = componentLength
+				headersPayload.update({contentLengthHeaderKey:contentLengthHeaderVal})
+
+			# making the query params
+			genericCounter = 0
+			componentLength = len(sendThisRequest.get('requestQueryParams'))
+			
+			debugMessage = "\nSize of query params = " + str(componentLength)
+			debug(debugMessage)
+
+			if(componentLength != 0):
+				
+				debugMessage = "\nQuery params found "
+				debug(debugMessage)
+
+				while (genericCounter < componentLength):
+					key = str(sendThisRequest.get('requestQueryParams').keys()[genericCounter])
+					val = str(sendThisRequest.get('requestQueryParams')[sendThisRequest.get('requestQueryParams').keys()[genericCounter]][0]) 
+
+					debugMessage = "\nKey = " + key + "\nVal = " + val
+					debug(debugMessage)
+
+					queryParamsPayload.update({key:val})
+					genericCounter = genericCounter + 1
+				
+				debugMessage = "\nPayloads dictionary is " + str(queryParamsPayload)
+				debug (debugMessage)
+
+				response = requests.get(url, params = queryParamsPayload, headers = headersPayload)
+				print "\nThe response received for the above request is : \n\n"
+				print response.status_code
+				for k, v in response.headers.iteritems():
+					print k + ": " + v
+				print response.content
+
+			else:
+				debugMessage = "\nNo query params found "
+				debug(debugMessage)
 		
+		debugMessage = "\nRepeaterModule class --> finished sendRequest()"
+		debug(debugMessage)
 	# ----------------------------------------------------------------------------------------------------------------------------------------
 ##############################################################################################################################################
 
