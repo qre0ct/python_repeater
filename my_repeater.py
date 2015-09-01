@@ -736,6 +736,7 @@ class RepeaterModule(RequestLogger):
 		contentLengthHeaderKey = "Content-Length"
 		contentLengthHeaderVal = 0
 		bodyPresentFlag = 0
+		reqMethod = str(sendThisRequest.get('requestMethod'))
 
 		print "\nFinal request being sent now is :\n"
 		print "\n1. Port :" + str(sendThisRequest.get('requestPort'))
@@ -750,91 +751,95 @@ class RepeaterModule(RequestLogger):
 		print "\n7. Request Body :" + str(sendThisRequest.get('requestBody'))
 		print "\n\nSending the request now ...! "
 
-		# creating the GET request 
-		if(str(sendThisRequest.get('requestMethod')).lower() == "get"):
-			debugMessage = "\npreparing the GET request "
+		# creating the request 
+		debugMessage = "\npreparing the GET request "
+		debug(debugMessage)
+
+		bodyPresentFlag = 0
+
+		# making the url
+		url = str(sendThisRequest.get('requestScheme')) + "://" + str(sendThisRequest.get('requestHeaders')['host'][0]) + ":" + str(sendThisRequest.get('requestPort'))
+		url = url + "/" + reqPath
+		
+		print "\nRequest being fired on the URL : " + url
+
+		# making the headers
+		componentLength = len(sendThisRequest.get('requestHeaders'))
+		while(genericCounter < componentLength):
+			key = str(sendThisRequest.get('requestHeaders').keys()[genericCounter])
+			val = str(sendThisRequest.get('requestHeaders')[sendThisRequest.get('requestHeaders').keys()[genericCounter]][0])
+			
+			debugMessage = "\nKey = " + key + "\nVal = " + val
 			debug(debugMessage)
 
-			bodyPresentFlag = 0
+			headersPayload.update({key:val})
+			genericCounter = genericCounter + 1
 
-			# making the url
-			url = str(sendThisRequest.get('requestScheme')) + "://" + str(sendThisRequest.get('requestHeaders')['host'][0]) + ":" + str(sendThisRequest.get('requestPort'))
-			url = url + "/" + reqPath
+		# adding the content length header for all requests - by default it is set to 0. If there is any content it is updated to the respective content length
+		headersPayload.update({contentLengthHeaderKey:contentLengthHeaderVal})
+
+		debugMessage = "\nHeaders dictionary is " + str(headersPayload)
+		debug (debugMessage)
+		
+		#Checking if there was content 
+		componentLength = len(sendThisRequest.get('requestBody'))
+
+		debugMessage = "\nSize of body in the GET request is " + str(componentLength)
+		debug(debugMessage)
+
+		if(componentLength != 0):
+			# content length found - hence updating the content length header
+			contentLengthHeaderVal = componentLength
+			headersPayload.update({contentLengthHeaderKey:contentLengthHeaderVal})
+			bodyPresentFlag = 1
+
+		# making the query params
+		genericCounter = 0
+		componentLength = len(sendThisRequest.get('requestQueryParams'))
+		
+		debugMessage = "\nSize of query params = " + str(componentLength)
+		debug(debugMessage)
+
+		if(componentLength != 0):
 			
-			print "\nRequest being fired on the URL : " + url
+			debugMessage = "\nQuery params found "
+			debug(debugMessage)
 
-			# making the headers
-			componentLength = len(sendThisRequest.get('requestHeaders'))
-			while(genericCounter < componentLength):
-				key = str(sendThisRequest.get('requestHeaders').keys()[genericCounter])
-				val = str(sendThisRequest.get('requestHeaders')[sendThisRequest.get('requestHeaders').keys()[genericCounter]][0])
-				
+			while (genericCounter < componentLength):
+				key = str(sendThisRequest.get('requestQueryParams').keys()[genericCounter])
+				val = str(sendThisRequest.get('requestQueryParams')[sendThisRequest.get('requestQueryParams').keys()[genericCounter]][0]) 
+
 				debugMessage = "\nKey = " + key + "\nVal = " + val
 				debug(debugMessage)
 
-				headersPayload.update({key:val})
+				queryParamsPayload.update({key:val})
 				genericCounter = genericCounter + 1
-
-			debugMessage = "\nHeaders dictionary is " + str(headersPayload)
+			
+			debugMessage = "\nPayloads dictionary is " + str(queryParamsPayload)
 			debug (debugMessage)
-			
-			# cehcking if content-length header is needed - if the user has editted the body of a GET request, then content length header needs to be included
-			componentLength = len(sendThisRequest.get('requestBody'))
 
-			debugMessage = "\nSize of body in the GET request is " + str(componentLength)
-			debug(debugMessage)
-
-			if(componentLength != 0):
-				contentLengthHeaderVal = componentLength
-				headersPayload.update({contentLengthHeaderKey:contentLengthHeaderVal})
-				bodyPresentFlag = 1
-
-			# making the query params
-			genericCounter = 0
-			componentLength = len(sendThisRequest.get('requestQueryParams'))
-			
-			debugMessage = "\nSize of query params = " + str(componentLength)
-			debug(debugMessage)
-
-			if(componentLength != 0):
-				
-				debugMessage = "\nQuery params found "
-				debug(debugMessage)
-
-				while (genericCounter < componentLength):
-					key = str(sendThisRequest.get('requestQueryParams').keys()[genericCounter])
-					val = str(sendThisRequest.get('requestQueryParams')[sendThisRequest.get('requestQueryParams').keys()[genericCounter]][0]) 
-
-					debugMessage = "\nKey = " + key + "\nVal = " + val
-					debug(debugMessage)
-
-					queryParamsPayload.update({key:val})
-					genericCounter = genericCounter + 1
-				
-				debugMessage = "\nPayloads dictionary is " + str(queryParamsPayload)
-				debug (debugMessage)
-
-				if(bodyPresentFlag):
-					response = requests.request('GET', url, params = queryParamsPayload, headers = headersPayload, data=str(sendThisRequest.get('requestBody')))
-
-				else:
-					response = requests.get(url, params = queryParamsPayload, headers = headersPayload)
+			if(bodyPresentFlag):
+				response = requests.request(reqMethod, url, params = queryParamsPayload, headers = headersPayload, data=str(sendThisRequest.get('requestBody')))
 
 			else:
-				debugMessage = "\nNo query params not found "
-				debug(debugMessage)
+				response = requests.request(reqMethod, url, params = queryParamsPayload, headers = headersPayload)
 
-				if(bodyPresentFlag):
-					response = requests.request('GET', url, headers = headersPayload, data=str(sendThisRequest.get('requestBody')))
+		else:
+			debugMessage = "\nNo query params not found "
+			debug(debugMessage)
 
-				else:
-					response = requests.get(url, headers = headersPayload)
-				
-			print "\nThe response received for the above request is : \n\n"
-			print response.status_code
-			for k, v in response.headers.iteritems():
-				print k + ": " + v
-			print response.content
+			if(bodyPresentFlag):
+				response = requests.request(reqMethod, url, headers = headersPayload, data=str(sendThisRequest.get('requestBody')))
+
+			else:
+				response = requests.request(reqMethod, headers = headersPayload)
+			
+		print "\nThe response received for the above request is : \n\n"
+		print response.status_code
+		for k, v in response.headers.iteritems():
+			print k + ": " + v
+		print "\n"
+		print response.content
 
 		
 		debugMessage = "\nRepeaterModule class --> finished sendRequest()"
