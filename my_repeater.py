@@ -426,7 +426,7 @@ class RepeaterModule(RequestLogger):
 			
 			else:
 				if(choice.lower() == 'n' ): 
-					print "\nThanks for using the script... more functionality enroute !"
+					print "\nThanks for using the script... more functionality enroute !\n\n"
 					exit(1)
 				
 				else:
@@ -848,7 +848,7 @@ class RepeaterModule(RequestLogger):
 				response = requests.request(reqMethod, url, headers = headersPayload, data=str(sendThisRequest.get('requestBody')))
 
 			else:
-				response = requests.request(reqMethod, headers = headersPayload)
+				response = requests.request(reqMethod, url, headers = headersPayload)
 			
 		print "\nThe response received for the above request is : \n\n"
 		print response.status_code
@@ -867,6 +867,10 @@ class RepeaterModule(RequestLogger):
 ##############################################################################################################################################
 if __name__ == "__main__":
 	
+	print "\n\n-- SINCE THE BEGGINGING OF THE AGES THE HUMAN AND THE PYTHON HAVE BEEN LONG RELATED TO EACH OTHER AND THEY HAVE KNOWN TO CO-EXIST IN A SYMBIOTIC "
+	print "TIGHTLY COUPLED RELATIONSHIP THAT HAS OFTEN HELPED BOTH THE SPECIES EVOLVE OVER TIME !"
+	print "Our find means that humans were more organized and had the capacity for abstract thinking at a much earlier point in history than we have previously assumed !! "
+
 	moreConfig = ConfigObj(CONFIG_FILE)
 	choice = 'n'
 	counter = 0
@@ -879,7 +883,7 @@ if __name__ == "__main__":
 		if file.endswith(".txt"):
 			debugMessage = str(file)
 			debug(debugMessage)
-			print "human found"
+			print "\nhuman found"
 			humanRequestFound = True
 			break
 			
