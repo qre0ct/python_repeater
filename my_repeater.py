@@ -213,18 +213,34 @@ class RequestLogger(controller.Master):
 class RepeaterModule(RequestLogger):
 
 	# ----------------------------------------------------------------------------------------------------------------------------------------
-	def __init__(self, requestLoggerObject):
+	def __init__(self, requestLoggerObject = None, textFile = None, pickleFile = None):
 		debugMessage = "\nRepeaterModule class --> init() --> Repeater module kickoff !!"
 		debug(debugMessage)
 
-		self.numberOfRequestsCaptured = requestLoggerObject.requestNumber
+		if(requestLoggerObject is not None):
+			self.numberOfRequestsCaptured = requestLoggerObject.requestNumber
 
-		if (self.numberOfRequestsCaptured == 0):
-			print "\n\nNo requests were captured to show/replay !!"
-			exit(1)
-		
-		self.currentFileToProcess = requestLoggerObject.currentFile
-		self.rawRequestFile = requestLoggerObject.currentRawFile
+			# reanaming the text and raw files to include the number of requests captured as part of the file name itself. 
+			# this is a hack around to help the case where we need to process logged requests.
+			newCurrentFileName = os.path.splitext(requestLoggerObject.currentFile)[0] + "_" + str(requestLoggerObject.requestNumber) + ".txt"
+			newCurrentRawFileName = os.path.splitext(requestLoggerObject.currentRawFile)[0] + "_" + str(requestLoggerObject.requestNumber) + ".raw"
+			os.rename(requestLoggerObject.currentFile, newCurrentFileName)
+			os.rename(requestLoggerObject.currentRawFile, newCurrentRawFileName)
+
+			if (self.numberOfRequestsCaptured == 0):
+				print "\n\nNo requests were captured to show/replay !!"
+				exit(1)
+			
+			self.currentFileToProcess = newCurrentFileName
+			self.rawRequestFile = newCurrentRawFileName
+
+		else:
+			self.currentFileToProcess = textFile
+			self.rawRequestFile = pickleFile
+			self.numberOfRequestsCaptured = int(textFile[textFile.rfind("_")+1:textFile.rfind(".")])
+			if(self.numberOfRequestsCaptured == 0):
+				print "\n\nThe selected log file has zero requests captured to show/replay !!"
+				exit(1)
 		
 		self.options = {
 			1:self.viewAllRequests,
@@ -752,7 +768,7 @@ class RepeaterModule(RequestLogger):
 		print "\n\nSending the request now ...! "
 
 		# creating the request 
-		debugMessage = "\npreparing the GET request "
+		debugMessage = "\npreparing the request to be sent..."
 		debug(debugMessage)
 
 		bodyPresentFlag = 0
@@ -851,18 +867,81 @@ class RepeaterModule(RequestLogger):
 ##############################################################################################################################################
 if __name__ == "__main__":
 	
-	print "\n\nCtrl+C to stop logging requests and proceed with the REPEATER !! "
-	config = proxy.ProxyConfig(
-		port=8080,
-		# use ~/.mitmproxy/mitmproxy-ca.pem as default CA file.
-		cadir="~/.mitmproxy/"
-	)
 	moreConfig = ConfigObj(CONFIG_FILE)
-	state = flow.State()
-	server = ProxyServer(config)
-	reqLog = RequestLogger(server)
-	reqLog.run()
+	choice = 'n'
+	counter = 0
+	humanRequestFound = None
+	pythonRequestFound = None
+	humanLogDict = {}
+	pythonLogDict = {}
+	# If there are previous sessions already logged, RequestLogger class need not be called at all. We can straight away start with the RepeaterModule class.
+	for file in os.listdir("."):
+		if file.endswith(".txt"):
+			debugMessage = str(file)
+			debug(debugMessage)
+			print "human found"
+			humanRequestFound = True
+			break
+			
+	for file in os.listdir("."):
+		if file.endswith(".raw"):
+			debugMessage = str(file)
+			debug(debugMessage)
+			print "python found"
+			pythonRequestFound = True
+			break
+		
+	if(humanRequestFound and pythonRequestFound):
+		debugMessage = "\nYEPPIKKKAAAEE babae....!! "
+		debug(debugMessage)
+
+		print "\nPreviously logged sessions exist. Repeat from them ?\nY - Yes, choose an existing session to play with !\nN - No, start fresh !"
+		choice = raw_input("\nEnter Y/N (any other character leads to termination of the script): ")
+
+		if (choice.lower() == 'y'):
+			debugMessage = "\nChoosing from existing logged sessions"
+			debug(debugMessage)
+
+			print "\nBelow logged requests exist:\n"
+			
+			for file in os.listdir("."):
+				if file.endswith(".txt"):
+					counter = counter + 1
+					print str(counter) + ". " + str(file)
+					humanLogDict.update({counter:str(file)})
+
+			counter = 0
+			for file in os.listdir("."):
+				if file.endswith(".raw"):
+					counter = counter + 1
+					pythonLogDict.update({counter:str(file)})
+
+			choice = input("\nEnter log number to play with: ")
+			repMod = RepeaterModule(None, humanLogDict[humanLogDict.keys()[choice - 1]], pythonLogDict[pythonLogDict.keys()[choice - 1]])
+			repMod.showOptions()
+
+		elif(choice.lower() == 'n'):
+			choice = "n"
+		
+		else:
+			print "\n\nInvalid choice !"
+			exit(1)	
+
+	if(choice.lower() == 'n'):
+		print "\nStarting new session afresh..."
+		print "\n\nCtrl+C to stop logging requests and proceed with the REPEATER !! "
+		config = proxy.ProxyConfig(
+			port=8080,
+			# use ~/.mitmproxy/mitmproxy-ca.pem as default CA file.
+			cadir="~/.mitmproxy/"
+		)
+		
+		state = flow.State()
+		server = ProxyServer(config)
+		reqLog = RequestLogger(server)
+		reqLog.run()
+
+		repMod = RepeaterModule(reqLog)
+		repMod.showOptions()
 	
-	repMod = RepeaterModule(reqLog)
-	repMod.showOptions()
 ##############################################################################################################################################
