@@ -13,11 +13,14 @@ from configobj import ConfigObj
 
 
 ##############################################################################################################################################
+# request separator used as a separator marker in the human readable request text files that would be logged. So each request is separated with 
+# this marker in the text file. CONFIG_FILE is used to specify the domains that need to be logged etc. 
 requestSeparator = "*********************************************************************************************************************************"
 CONFIG_FILE = 'config.cfg'
 moreConfig = None
 
 # ----------------------------------------------------------------------------------------------------------------------------------------
+# global method used to display debug messages when the debug section is true in the config file.
 def debug(message):
 	if moreConfig['display']['debug'] == 'true':
 		print message
@@ -28,6 +31,7 @@ def debug(message):
 
 
 ##############################################################################################################################################
+# The class that makes use of mitmproxy and logs all requests. 
 class RequestLogger(controller.Master):
 	
 	# ----------------------------------------------------------------------------------------------------------------------------------------
@@ -84,6 +88,9 @@ class RequestLogger(controller.Master):
 
 	
 	# ----------------------------------------------------------------------------------------------------------------------------------------
+	# we read the target domain from the config file and comapre the requests coming from the device. If it's a match we format those requests 
+	# and write it out in the human readable text file. Also at the same time we also dump out the request in the pickle file by calling the 
+	# serializeRequestComponents()
 	def handle_request(self, flow):
 		debugMessage = "\nRequestLogger Class --> handle_request()"
 		debug(debugMessage)
@@ -104,6 +111,7 @@ class RequestLogger(controller.Master):
 		
 		self.targetDomain = moreConfig['target'].values()
 
+		# matching the domain read from the config file
 		if (req.headers["host"][0] in self.targetDomain):
 			self.requestNumber = self.requestNumber + 1
 			
@@ -115,8 +123,10 @@ class RequestLogger(controller.Master):
 			# the whole file r/w operation can be put in a common class and accessed form there for better modularity of the code
 			# left for a later version
 			
+			# dumping the file in a pcikle file - the .raw file on the disk
 			self.serializeRequestComponents(req)
 			try:
+				# writing out the requests with the request number in the human readable text file
 				self.myFile = open(self.currentFile, "a")
 				
 				debugMessage = "\nRequestLogger Class --> handle_request --> try {} --> Requests File opened !"
@@ -153,16 +163,23 @@ class RequestLogger(controller.Master):
 
 	
 	# ----------------------------------------------------------------------------------------------------------------------------------------
+	# the function that dumps the requests in a pickle file - the .raw files on the disk
 	def serializeRequestComponents(self, serializeThisRequest):
 		debugMessage = "\nRequestLogger Class --> serializeRequestComponents() --> Serializing the Raw Request now using Pickle..."
 		debug(debugMessage)
 
 		try :
+			# writing out the pickle file
 			self.myRawFile = open(self.currentRawFile, "ab")
 			
 			debugMessage = "\n\nRequestLogger Class --> serializeRequestComponents() --> try {} --> Raw File opened !"
 			debug(debugMessage)
 
+			# attaching the request number with each component of each request. The logic is - so that when the user wants a certain request to be 
+			# tampered or repeated, we are not really dealing with the human readable text file. (The human readable text file is used only for
+			# the case when the user wants to see all the logged requests or when the user wants to actually take a look manually at the requests 
+			# from the logs - so he can just goto the folder and read the text files using a text editor.) Instead we pick up all entities of the 
+			# request number that the user chose from the pickle file and form a dictionary out of it and then play around with as required.
 			requestPort = "port # " + str(self.requestNumber)
 			requestScheme = "scheme # " + str(self.requestNumber)
 			requestMethod = "method # " + str(self.requestNumber)
@@ -171,6 +188,7 @@ class RequestLogger(controller.Master):
 			requestQueryParams = "query_params # " + str(self.requestNumber)
 			requestBody = "request_body # " + str(self.requestNumber)
 			
+			# created the dictionary object to be finally dumped out on the disk
 			self.rawRequestObject.update({
 				requestPort : serializeThisRequest.port,
 				requestScheme : serializeThisRequest.scheme,
@@ -181,6 +199,7 @@ class RequestLogger(controller.Master):
 				requestBody : serializeThisRequest.get_decoded_content()
 				})
 
+			# dumping out the raw requests file as .raw files on the disk
 			pickle.dump (self.rawRequestObject, self.myRawFile)
 			
 			debugMessage = "\nCurrent request picklized .... pickle dumped to raw file"
@@ -210,6 +229,7 @@ class RequestLogger(controller.Master):
 
 
 ##############################################################################################################################################
+# handles all the repeater stuff and the modification of the request stuff.
 class RepeaterModule(RequestLogger):
 
 	# ----------------------------------------------------------------------------------------------------------------------------------------
@@ -217,11 +237,12 @@ class RepeaterModule(RequestLogger):
 		debugMessage = "\nRepeaterModule class --> init() --> Repeater module kickoff !!"
 		debug(debugMessage)
 
-		if(requestLoggerObject is not None):
+		if(requestLoggerObject is not None): 
+			# meaning -> the user has chosen to start a fresh logging session and not read from a previously logged session
 			self.numberOfRequestsCaptured = requestLoggerObject.requestNumber
 
 			# reanaming the text and raw files to include the number of requests captured as part of the file name itself. 
-			# this is a hack around to help the case where we need to process logged requests.
+			# this is a hack around to help the case where we need to process the previously logged requests.
 			newCurrentFileName = os.path.splitext(requestLoggerObject.currentFile)[0] + "_" + str(requestLoggerObject.requestNumber) + ".txt"
 			newCurrentRawFileName = os.path.splitext(requestLoggerObject.currentRawFile)[0] + "_" + str(requestLoggerObject.requestNumber) + ".raw"
 			os.rename(requestLoggerObject.currentFile, newCurrentFileName)
@@ -235,8 +256,10 @@ class RepeaterModule(RequestLogger):
 			self.rawRequestFile = newCurrentRawFileName
 
 		else:
+			# meaning -> the user has chosen to replay the request from a previously logged session
 			self.currentFileToProcess = textFile
 			self.rawRequestFile = pickleFile
+			# finding the number of requests captured by reading it from the file name itself. 
 			self.numberOfRequestsCaptured = int(textFile[textFile.rfind("_")+1:textFile.rfind(".")])
 			if(self.numberOfRequestsCaptured == 0):
 				print "\n\nThe selected log file has zero requests captured to show/replay !!"
@@ -259,15 +282,15 @@ class RepeaterModule(RequestLogger):
 		debugMessage = "\nRepeaterModule class --> showOptions()"
 		debug(debugMessage)
 
-		# taking user input for choosing which app to test !
+		# taking user input for choosing whether to show all requests or choose a certain request to play around with
 		print "\n\n1.View All Requests \n2.Choose one to repeat "
-		# choosing the right method depending on user choice 
 		choice = input("\nEnter the corresponding number : ")
 		print "\n"
 		if(choice > 2 or choice < 1):
 			print "\nInvalid choice !\n\n"
 			exit(1)
 		if(choice <=2 and choice >=1):
+			# the choice selects the respective function
 			self.options[choice]()
 
 		debugMessage = "\nRepeaterModule class --> finished showOptions()"
@@ -276,6 +299,8 @@ class RepeaterModule(RequestLogger):
 
 	
 	# ----------------------------------------------------------------------------------------------------------------------------------------
+	# to show all the requests captured in the current/previously logged session. It simply reads the requests file line by line and dumps it
+	# out on the terminal
 	def viewAllRequests(self):
 		debugMessage = "\nRepeaterModule class --> viewAllRequests()"
 		debug(debugMessage)
@@ -316,6 +341,7 @@ class RepeaterModule(RequestLogger):
 
 	
 	# ----------------------------------------------------------------------------------------------------------------------------------------
+	# if the user chooses a certain request instead of saying show all the requests. 
 	def chooseRequest(self):
 		debugMessage = "\nRepeaterModule class --> chooseRequest()"
 		debug(debugMessage)
@@ -330,6 +356,7 @@ class RepeaterModule(RequestLogger):
 			exit(1)
 		
 		if(choice <= self.numberOfRequestsCaptured and choice >=1):
+			# the user choice is taken and sent to the requestMaker() which handles displaying and tampering of the selceted request
 			self.requestMaker(choice)
 		
 		debugMessage = "\nRepeaterModule class --> finished chooseRequest()"
@@ -338,12 +365,15 @@ class RepeaterModule(RequestLogger):
 
 	
 	# ----------------------------------------------------------------------------------------------------------------------------------------
+	# depending on the user's choice the respective fields are taken from the pickle (.raw) file and a dictionary is made out of it. Now it is
+	# the elements of this dictionary that is diplayed to the user as different parts of the request and used when the user wants to tamper with
+	# any of it. 
 	def requestMaker(self, requestNumber):
 		debugMessage = "\nRepeaterModule class --> requestMaker() --> Preparing the request object in requestMaker !"
 		debug(debugMessage)
 		
 		totalNoOfParams = 0
-		reqCompoContainer = {}
+		reqCompoContainer = {} # contains all of the requests that were dumped in the pickle file. 
 		userEditContainer = {}
 		headersDic = {}
 		queryParamsDic = {}
@@ -356,6 +386,7 @@ class RepeaterModule(RequestLogger):
 
 			while 1:
 				try:
+					# loading back the pickle file into the respective dictionary
 					reqCompoContainer.update(pickle.load(myFile))
 				except EOFError:
 					break # no more data in the file
@@ -374,7 +405,9 @@ class RepeaterModule(RequestLogger):
 			headersDic = reqCompoContainer.get(headersKey)
 			queryParamsDic = reqCompoContainer.get(query_paramsKey)
 
-			# dictionary containing data of request chosen by user
+			# dictionary containing data of request chosen by user. Copying out from the requestCompoContainer dictionary only those parameters that
+			# match the user choice. This is the final dictionary that contains the request as per user's choice and this is what would be modified
+			# if the user chooses to edit the request or simply repeat it wihout editing. 
 			userEditContainer.update({
 				'requestPort' : reqCompoContainer.get(portKey),
 				'requestScheme' : reqCompoContainer.get(schemeKey),
@@ -401,6 +434,7 @@ class RepeaterModule(RequestLogger):
 			choice = raw_input("\nEnter Y/N (any other character leads to termination of the script): ")
 			
 			if (choice.lower() == 'y' ):
+				# passing the user chosen request dictionary to tamperData() to edit the parameters of the request
 				self.tamperData(userEditContainer)
 			
 			else: 
@@ -409,6 +443,7 @@ class RepeaterModule(RequestLogger):
 					debug(debugMessage)
 
 					print "\njust repeating the selected request without any tampering"
+					# passing the user chosen request dictionary to sendRequest() to simply repeat the request
 					self.sendRequest(userEditContainer)
 				
 				else:
@@ -455,6 +490,7 @@ class RepeaterModule(RequestLogger):
 
 	
 	# ----------------------------------------------------------------------------------------------------------------------------------------
+	# holds the user chosen requests dictionary passed from the requestMaker()
 	def tamperData(self, dataToTamperContainer):
 		debugMessage = "\nRepeaterModule class --> tamperData()"
 		debug(debugMessage)
@@ -462,14 +498,15 @@ class RepeaterModule(RequestLogger):
 		debug(debugMessage)
 
 		try :
-			while 1:
+			while 1: # to allow user to tamper the request as many times as he wants to
 				componentSize = 0
 				genericCounter = 0
 				newKey = ""
 				newValue = ""
 
 				choice = input("\nEnter the component number to tamper (1-7) ")
-				
+				# the entire request has been broken into 7 components which are being handled individually below.
+				# each of these cmoponents has options to add a new part to it or edit an existing one depending on the user's choice again. 
 				if (choice >= 1 and choice <= 7):
 					
 					# handling path component
@@ -733,6 +770,8 @@ class RepeaterModule(RequestLogger):
 			print "\nPositive integer to be entered where and when required !! "
 			exit(1)
 
+		# finally when the user is done with all sorts of palying with the different components of the request, the updated dictionary is sent to 
+		# the sendRequest() to finally send the request and display the response. 
 		self.sendRequest(dataToTamperContainer)
 
 		debugMessage = "\nRepeaterModule class --> finished tamperData()"
@@ -741,6 +780,9 @@ class RepeaterModule(RequestLogger):
 
 	
 	# ----------------------------------------------------------------------------------------------------------------------------------------
+	# after the user has editted the request and finalized that he wants to send the request, the dictionary containing the updated components
+	# is sent to the below function. The below function takes the dictionary and extracts every single component from it to form a request in 
+	# terms of the Requests library. Then the Requests library is finally used to send the request and read/display the response. 
 	def sendRequest(self, sendThisRequest):
 		debugMessage = "\nRepeaterModule class --> sendRequest()"
 		debug(debugMessage)
@@ -841,7 +883,7 @@ class RepeaterModule(RequestLogger):
 				response = requests.request(reqMethod, url, params = queryParamsPayload, headers = headersPayload)
 
 		else:
-			debugMessage = "\nNo query params not found "
+			debugMessage = "\nNo query params found "
 			debug(debugMessage)
 
 			if(bodyPresentFlag):
@@ -866,7 +908,7 @@ class RepeaterModule(RequestLogger):
 
 ##############################################################################################################################################
 if __name__ == "__main__":
-	
+	# thought of expressing my gratitude and affinity with python :)
 	print "\n\n-- SINCE THE BEGGINGING OF THE AGES THE HUMAN AND THE PYTHON HAVE BEEN LONG RELATED TO EACH OTHER AND THEY HAVE KNOWN TO CO-EXIST IN A SYMBIOTIC "
 	print "TIGHTLY COUPLED RELATIONSHIP THAT HAS OFTEN HELPED BOTH THE SPECIES EVOLVE OVER TIME !"
 	print "Our find means that humans were more organized and had the capacity for abstract thinking at a much earlier point in history than we have previously assumed !! "
@@ -878,7 +920,9 @@ if __name__ == "__main__":
 	pythonRequestFound = None
 	humanLogDict = {}
 	pythonLogDict = {}
-	# If there are previous sessions already logged, RequestLogger class need not be called at all. We can straight away start with the RepeaterModule class.
+
+	# reading the dir to figure out if there is even 1 requests file - both the human readable text file and pickle .raw file present. If yes, we show the user
+	# that there are preveiosly logged sessions alrady present and if the user would want to use them or start afresh. 
 	for file in os.listdir("."):
 		if file.endswith(".txt"):
 			debugMessage = str(file)
@@ -908,6 +952,8 @@ if __name__ == "__main__":
 
 			print "\nBelow logged requests exist:\n"
 			
+			# making a dictionary to itemize the previous log files (both text and .raw) present and show to the user. So not when the user chooses one 
+			# to replay, the corresponding file can be simply read and processed.
 			for file in os.listdir("."):
 				if file.endswith(".txt"):
 					counter = counter + 1
@@ -921,6 +967,9 @@ if __name__ == "__main__":
 					pythonLogDict.update({counter:str(file)})
 
 			choice = input("\nEnter log number to play with: ")
+			
+			# if it is the previously logged files being read the RequestLogger module need not be called at all. We can directly call the RepeaterModule
+			# passing it the text file chosen by the user and the correspondong .raw file. 
 			repMod = RepeaterModule(None, humanLogDict[humanLogDict.keys()[choice - 1]], pythonLogDict[pythonLogDict.keys()[choice - 1]])
 			repMod.showOptions()
 
@@ -932,6 +981,7 @@ if __name__ == "__main__":
 			exit(1)	
 
 	if(choice.lower() == 'n'):
+		# starting a new session afresh in case the user chooses to do so instead of reading from previously existing (if any) request logs
 		print "\nStarting new session afresh..."
 		print "\n\nCtrl+C to stop logging requests and proceed with the REPEATER !! "
 		config = proxy.ProxyConfig(
