@@ -9,4 +9,4 @@ with it. The script itself is pretty verbose. Once the script is running, you ca
 and all the requests you make through that app, will be logged in your current working directory (which can be later
 read directly as well). Once done, pass on a Ctrl+C interrupt to the script and follow the verbose comments. 
 
-The main entry point to the script is python_repeater.py
+The main entry point to the script is my_repeater.py
