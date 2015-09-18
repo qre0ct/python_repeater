@@ -14,7 +14,6 @@ from warnings import filterwarnings
 from dateutil import parser
 import datetime
 import dateutil
-import ast
 ##############################################################################################################################################
 
 
@@ -318,29 +317,19 @@ class DataAccessObject():
 	def addNewResultsToDb(self, reqTimeStamp = None, reqHost = None, reqNumber = None, reqPort = None, reqScheme = None, reqMethod = None, reqPath = None, reqHeaders = None, reqQueryParams = None, reqBody = None, putThisPickleInDb = None):
 
 		# picking out values to be inserted (the different parts of the request), in the db, from the arguments to the method
-		print "\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n"
-		print reqTimeStamp
-		print reqHost
-		print reqNumber
-		print reqPort
-		print reqScheme
-		print reqMethod
-		print reqPath
-		print reqHeaders
-		print reqQueryParams
-		print reqBody
-
-		print type(reqTimeStamp)
-		print type(reqHost)
-		print type(reqNumber)
-		print type(reqPort)
-		print type(reqScheme)
-		print type(reqMethod)
-		print type(reqPath)
-		print type(reqHeaders)
-		print type(reqQueryParams)
-		print type(reqBody)
-		print "\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n"
+		debugMessage = "\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n"
+		debugMessage = debugMessage + str(reqTimeStamp)
+		debugMessage = debugMessage + str(reqHost)
+		debugMessage = debugMessage + str(reqNumber)
+		debugMessage = debugMessage + str(reqPort)
+		debugMessage = debugMessage + str(reqScheme)
+		debugMessage = debugMessage + str(reqMethod)
+		debugMessage = debugMessage + str(reqPath)
+		debugMessage = debugMessage + str(reqHeaders)
+		debugMessage = debugMessage + str(reqQueryParams)
+		debugMessage = debugMessage + str(reqBody)
+		debugMessage = debugMessage + "\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n"
+		debug(debugMessage)
 
 		try:
 			
@@ -353,14 +342,14 @@ class DataAccessObject():
 				debugMessage = "\nhas NO pickle"
 				debug(debugMessage)
 
-				insertValueQry = "INSERT INTO request_logs(request_as_on, request_host, request_number, request_port, request_scheme, request_method, request_path, request_headers, request_query_params, request_body) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-
-				self.cur.execute(insertValueQry,(parser.parse(reqTimeStamp).strftime('%Y-%m-%d %H:%M:%S'), reqHost, reqNumber, reqPort, reqScheme, reqMethod, self.con.escape_string(str(reqPath)), self.con.escape_string(str(reqHeaders)), self.con.escape_string(str(reqQueryParams)), self.con.escape_string(str(reqBody))))
+				ts = parser.parse(reqTimeStamp).strftime('%Y-%m-%d %H:%M:%S')
+				self.cur.execute(""" INSERT INTO request_logs VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""", (ts, reqHost, reqNumber, reqPort, reqScheme, reqMethod, self.con.escape_string(str(reqPath)).decode('string_escape'), self.con.escape_string(str(reqHeaders)).decode('string_escape'), self.con.escape_string(str(reqQueryParams)).decode('string_escape'), self.con.escape_string(str(reqBody)).decode('string_escape'), ))
 
 			else:
 				# meaning now we are going to populate the session_logs table with the pickle. 
 				debugMessage = "\nhas pickle"
 				debug(debugMessage)
+				
 				ts = parser.parse(reqTimeStamp).strftime('%Y-%m-%d %H:%M:%S')
 
 				debugMessage = "Savior query form http://blog.cameronleger.com/2011/05/31/python-example-pickling-things-into-mysql-databases/"
@@ -421,9 +410,6 @@ class DataAccessObject():
 				debug(debugMessage)
 
 				selectQry = "SELECT session_pickle from session_logs where request_as_on = %s"
-				print "printing make pickle and make pickle type"
-				print makePickle
-				print type(makePickle)
 
 				# for reason as to why has the [] been used around makePickle, please refer http://stackoverflow.com/questions/21740359/python-mysqldb-typeerror-not-all-arguments-converted-during-string-formatting
 				self.cur.execute(selectQry, ([makePickle]))
@@ -433,9 +419,6 @@ class DataAccessObject():
 				for each in rows:
 					for sessPickle in each:
 						pickleData = pickle.loads(sessPickle)
-						print "pickle data retrieved from the db is and its type is \n"
-						print pickleData
-						print type(pickleData)
 
 				debugMessage = "DataAccessObject --> readDataFromDb() --> try {} --> returning the found pickle as a list"
 				debug(debugMessage)
@@ -480,8 +463,9 @@ class RepeaterModule(RequestLogger):
 			self.rawRequestFile = newCurrentRawFileName
 
 		else:
-			print "meaning -> the user has chosen to replay the request from a previously logged session"
-			print pickleFile
+			debugMessage = "meaning -> the user has chosen to replay the request from a previously logged session"
+			debug(debugMessage)
+
 			self.currentFileToProcess = textFile
 			self.rawRequestFile = pickleFile
 			# finding the number of requests captured by reading it from the file name itself. 
@@ -1181,7 +1165,6 @@ if __name__ == "__main__":
 				if file.endswith(".txt"):
 					humanLogDict.update({counter:str(file)})
 
-			print humanLogDict
 			choice = input("\nEnter log number to play with: ")
 
 			# choosing the session_pickle and making the .raw file out of it. 
