@@ -188,7 +188,7 @@ class RequestLogger(controller.Master):
 			requestQueryParams = "query_params # " + str(self.requestNumber)
 			requestBody = "request_body # " + str(self.requestNumber)
 			
-			# created the dictionary object to be finally dumped out on the disk
+			# creating the dictionary object to be finally dumped out on the disk
 			self.rawRequestObject.update({
 				requestPort : serializeThisRequest.port,
 				requestScheme : serializeThisRequest.scheme,
