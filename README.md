@@ -10,3 +10,5 @@ and all the requests you make through that app, will be logged in your current w
 read directly as well). Once done, pass on a Ctrl+C interrupt to the script and follow the verbose comments. 
 
 The main entry point to the script is my_repeater.py
+
+In case a DB functionality is needed to save the repeater logs etc. pyRepeat.py is the entry point. 
