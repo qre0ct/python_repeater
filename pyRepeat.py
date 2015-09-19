@@ -659,9 +659,6 @@ class RepeaterModule(RequestLogger):
 					print "\nInvalid choice !\n\n"
 					exit(1)
 
-			if not myFile.closed:
-				myFile.close()
-
 			print "\n\nWant to replay another request ?"
 			choice = raw_input("\nEnter Y/N (any other character leads to termination of the script): ")
 			
@@ -927,7 +924,7 @@ class RepeaterModule(RequestLogger):
 						debug(debugMessage)
 						
 						print "\nThe request is currently directed on port number: " + str(dataToTamperContainer.get('requestPort'))
-						newValue = input("\nEnter the new port number you want to send it on: ")
+						newValue = raw_input("\nEnter the new port number you want to send it on: ")
 						dataToTamperContainer.update({'requestPort':newValue})
 						print "\n\nRequest updated"
 					# end of if(choice == 1)
@@ -1094,12 +1091,31 @@ class RepeaterModule(RequestLogger):
 		else:
 			debugMessage = "\nNo query params found "
 			debug(debugMessage)
+			try:
+				if(bodyPresentFlag):
+					response = requests.request(reqMethod, url, headers = headersPayload, data=str(sendThisRequest.get('requestBody')))
+				
+				else:
+					response = requests.request(reqMethod, url, headers = headersPayload)
+			
+			except requests.exceptions.ConnectTimeout as e:
+				print "\nWhat is it still the 80s...? You have a literally F****** slow internet ! Can't handle it ! Bye !\n\n"
+				exit(1)
 
-			if(bodyPresentFlag):
-				response = requests.request(reqMethod, url, headers = headersPayload, data=str(sendThisRequest.get('requestBody')))
+			except requests.exceptions.ReadTimeout as e:
+				print "\nWhat is it still the 80s...? You have a literally F****** slow internet ! Can't handle it ! Bye !\n\n"
+				exit(1)
 
-			else:
-				response = requests.request(reqMethod, url, headers = headersPayload)
+			except requests.exceptions.HTTPError as e:
+				print "\nHTTP doesn't like you ! So it killed itself !\n\n"
+				exit(1)
+
+			except requests.exceptions.RequestException as e:
+				print "\nOh Boy Boy. You hit THE exception ! Somewhere someone passed on the ball to an unknown URL scheme.\nCan't handle it ! Bye "
+				print e
+				print "\n\n"
+				exit(1)
+			
 			
 		print "\nThe response received for the above request is : \n\n"
 		print response.status_code
@@ -1165,7 +1181,7 @@ if __name__ == "__main__":
 				if file.endswith(".txt"):
 					humanLogDict.update({counter:str(file)})
 
-			choice = input("\nEnter log number to play with: ")
+			choice = raw_input("\nEnter log number to play with: ")
 
 			# choosing the session_pickle and making the .raw file out of it. 
 			debugMessage = "\nReading user selected session's pickle from the db"
@@ -1173,7 +1189,7 @@ if __name__ == "__main__":
 
 			# dbPickleList is a list of all the saved sessions as retrieved from the session_logs table. Depending on the user's choice, we choose that particular
 			# session and pass it to the readDataFromDb(). We then retrieve the session's pickle from the session_logs table depending on the above choice. 
-			userSelectedSession = dbPickleList[choice - 1]
+			userSelectedSession = dbPickleList[int(choice) - 1]
 			
 			debugMessage = "\n\n\npppppppppppppppppppppppppppppppppppp"
 			debug(debugMessage)
@@ -1191,7 +1207,7 @@ if __name__ == "__main__":
 
 			# if it is the previously logged files being read the RequestLogger module need not be called at all. We can directly call the RepeaterModule
 			# passing it the text file chosen by the user and the corresponding .raw file that we generated above from the db session_pickles. 
-			repMod = RepeaterModule(None, humanLogDict[humanLogDict.keys()[choice - 1]], rawPcikleFile)
+			repMod = RepeaterModule(None, humanLogDict[humanLogDict.keys()[int(choice) - 1]], rawPcikleFile)
 			repMod.showOptions()
 
 		elif(choice.lower() == 'n'):
