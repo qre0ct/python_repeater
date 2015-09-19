@@ -271,6 +271,9 @@ class RequestLogger(controller.Master):
 
 ##############################################################################################################################################
 # This class handles all the database interactions
+# The way db functiality for the repeater is being handled as of now is that we simply take the pickle object (that's also being dumped in the raw file) and dump it out in the session_logs table in the db. Then while trying to replay a request, we simply read this pickle object form the table and pass it to the repeater module. From there on the RepeaterModule handles things as it should. 
+# However, in a later version, for even better scalability, what could be done is, creation of the pickle on the fly rather than storing/reading it to/from the db. So in that case the plan would be - read all the columns of the request_logs table, depending on a ceratain session that needs to be repeated (chosen by the user), and create the self.rawRequestObject.update({}) dictionary (in the serializeRequestComponents() method above) with the values retrieved from the db and then do pickle.dump (self.rawRequestObject, self.myRawFile) to create the pickle raw file on the fly. 
+				
 class DataAccessObject():
 	
 	# ----------------------------------------------------------------------------------------------------------------------------------------
