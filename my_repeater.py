@@ -858,39 +858,58 @@ class RepeaterModule(RequestLogger):
 		debugMessage = "\nSize of query params = " + str(componentLength)
 		debug(debugMessage)
 
-		if(componentLength != 0):
-			
-			debugMessage = "\nQuery params found "
-			debug(debugMessage)
-
-			while (genericCounter < componentLength):
-				key = str(sendThisRequest.get('requestQueryParams').keys()[genericCounter])
-				val = str(sendThisRequest.get('requestQueryParams')[sendThisRequest.get('requestQueryParams').keys()[genericCounter]][0]) 
-
-				debugMessage = "\nKey = " + key + "\nVal = " + val
+		try:
+			if(componentLength != 0):
+				
+				debugMessage = "\nQuery params found "
 				debug(debugMessage)
 
-				queryParamsPayload.update({key:val})
-				genericCounter = genericCounter + 1
-			
-			debugMessage = "\nPayloads dictionary is " + str(queryParamsPayload)
-			debug (debugMessage)
+				while (genericCounter < componentLength):
+					key = str(sendThisRequest.get('requestQueryParams').keys()[genericCounter])
+					val = str(sendThisRequest.get('requestQueryParams')[sendThisRequest.get('requestQueryParams').keys()[genericCounter]][0]) 
 
-			if(bodyPresentFlag):
-				response = requests.request(reqMethod, url, params = queryParamsPayload, headers = headersPayload, data=str(sendThisRequest.get('requestBody')))
+					debugMessage = "\nKey = " + key + "\nVal = " + val
+					debug(debugMessage)
+
+					queryParamsPayload.update({key:val})
+					genericCounter = genericCounter + 1
+				
+				debugMessage = "\nPayloads dictionary is " + str(queryParamsPayload)
+				debug (debugMessage)
+
+				if(bodyPresentFlag):
+					response = requests.request(reqMethod, url, params = queryParamsPayload, headers = headersPayload, data=str(sendThisRequest.get('requestBody')))
+
+				else:
+					response = requests.request(reqMethod, url, params = queryParamsPayload, headers = headersPayload)
 
 			else:
-				response = requests.request(reqMethod, url, params = queryParamsPayload, headers = headersPayload)
+				debugMessage = "\nNo query params found "
+				debug(debugMessage)
 
-		else:
-			debugMessage = "\nNo query params found "
-			debug(debugMessage)
+				if(bodyPresentFlag):
+					response = requests.request(reqMethod, url, headers = headersPayload, data=str(sendThisRequest.get('requestBody')))
+				
+				else:
+					response = requests.request(reqMethod, url, headers = headersPayload)
+		
+		except requests.exceptions.ConnectTimeout as e:
+			print "\nWhat is it still the 80s...? You have a literally F****** slow internet ! Can't handle it ! Bye !\n\n"
+			exit(1)
 
-			if(bodyPresentFlag):
-				response = requests.request(reqMethod, url, headers = headersPayload, data=str(sendThisRequest.get('requestBody')))
+		except requests.exceptions.ReadTimeout as e:
+			print "\nWhat is it still the 80s...? You have a literally F****** slow internet ! Can't handle it ! Bye !\n\n"
+			exit(1)
 
-			else:
-				response = requests.request(reqMethod, url, headers = headersPayload)
+		except requests.exceptions.HTTPError as e:
+			print "\nHTTP doesn't like you ! So it killed itself !\n\n"
+			exit(1)
+
+		except requests.exceptions.RequestException as e:
+			print "\nOh Boy Boy. You hit THE exception ! Somewhere someone passed on the ball to an unknown URL scheme.\nCan't handle it ! Bye "
+			print e
+			print "\n\n"
+			exit(1)
 			
 		print "\nThe response received for the above request is : \n\n"
 		print response.status_code
