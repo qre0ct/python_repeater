@@ -1192,7 +1192,12 @@ if __name__ == "__main__":
 
 			# dbPickleList is a list of all the saved sessions as retrieved from the session_logs table. Depending on the user's choice, we choose that particular
 			# session and pass it to the readDataFromDb(). We then retrieve the session's pickle from the session_logs table depending on the above choice. 
-			userSelectedSession = dbPickleList[int(choice) - 1]
+			userChoice = int(choice) - 1
+			if (userChoice < 0):
+				print "\nInvalid choice \n\n"
+				exit(1)
+				
+			userSelectedSession = dbPickleList[userChoice]
 			
 			debugMessage = "\n\n\npppppppppppppppppppppppppppppppppppp"
 			debug(debugMessage)
